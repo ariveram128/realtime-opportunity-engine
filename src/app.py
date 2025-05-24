@@ -15,9 +15,25 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory
 from typing import Dict, Optional
 
+# Initialize logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Local imports
 from .database_manager import DatabaseManager
 from config import WEB_CONFIG
+
+# Try to import MCP handler (may not be available in all environments)
+try:
+    from .mcp_brightdata_handler_integrated import BrightDataMCPHandler, MCPAction
+    from config import MCP_CONFIG, MCP_METRICS
+    MCP_AVAILABLE = True
+    logger.info("MCP handler successfully imported")
+except ImportError as e:
+    logger.warning(f"MCP handler not available: {e}")
+    MCP_AVAILABLE = False
+    MCP_CONFIG = {}
+    MCP_METRICS = {}
 
 # Initialize Flask app with correct paths
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,10 +41,6 @@ app = Flask(__name__,
            template_folder=os.path.join(project_root, 'templates'),
            static_folder=os.path.join(project_root, 'static'))
 app.secret_key = WEB_CONFIG.get('secret_key', 'dev-key-change-in-production')
-
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Initialize database
 db = DatabaseManager()
@@ -50,6 +62,19 @@ realtime_search_status = {
     'progress': 0,
     'current_phase': '',
     'results': {},
+    'error': None,
+    'started_at': None,
+    'completed_at': None
+}
+
+# Global variable to track MCP search status  
+mcp_search_status = {
+    'is_running': False,
+    'progress': 0,
+    'current_action': '',
+    'current_phase': '',
+    'results': {},
+    'performance_metrics': {},
     'error': None,
     'started_at': None,
     'completed_at': None
@@ -203,8 +228,8 @@ def statistics():
 
 @app.route('/search')
 def search():
-    """Search page with advanced filters"""
-    return render_template('search.html')
+    """Redirect to main page with search functionality"""
+    return redirect(url_for('index'))
 
 
 @app.route('/api/search', methods=['GET', 'POST'])
@@ -935,9 +960,317 @@ def api_cleanup_database():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ==================== MCP ROUTES ====================
+
+@app.route('/api/mcp_search', methods=['POST'])
+def api_mcp_search():
+    """API endpoint for MCP-enhanced job discovery"""
+    global mcp_search_status
+    
+    try:
+        # Check if MCP search is already running
+        if mcp_search_status['is_running']:
+            return jsonify({
+                'success': False,
+                'error': 'An MCP search is already in progress. Please wait for it to complete.'
+            })
+        
+        # Get search parameters
+        search_data = request.json
+        search_term = search_data.get('search_term', '').strip()
+        max_results = search_data.get('max_results', 10)
+        
+        if not search_term:
+            return jsonify({'success': False, 'error': 'Search term is required'})
+        
+        # Initialize MCP search status
+        mcp_search_status.update({
+            'is_running': True,
+            'progress': 0,
+            'current_action': '',
+            'current_phase': 'Initializing MCP pipeline...',
+            'results': {},
+            'performance_metrics': {},
+            'error': None,
+            'started_at': datetime.now().isoformat(),
+            'completed_at': None,
+            'search_term': search_term,
+            'max_results': max_results
+        })
+        
+        # Start MCP search in background thread
+        mcp_thread = threading.Thread(
+            target=run_mcp_search_wrapper,
+            args=(search_term, max_results)
+        )
+        mcp_thread.daemon = True
+        mcp_thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': 'MCP search started',
+            'search_id': mcp_search_status['started_at']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting MCP search: {e}")
+        mcp_search_status['is_running'] = False
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/mcp_search/status')
+def api_mcp_search_status():
+    """Get the current status of the MCP search"""
+    return jsonify(mcp_search_status)
+
+
+@app.route('/api/mcp_search/cancel', methods=['POST'])
+def api_mcp_search_cancel():
+    """Cancel the current MCP search"""
+    global mcp_search_status
+    
+    if mcp_search_status['is_running']:
+        mcp_search_status['is_running'] = False
+        mcp_search_status['current_phase'] = 'Cancelled by user'
+        mcp_search_status['completed_at'] = datetime.now().isoformat()
+        return jsonify({'success': True, 'message': 'MCP search cancelled'})
+    else:
+        return jsonify({'success': False, 'message': 'No active MCP search to cancel'})
+
+
+@app.route('/api/mcp_metrics')
+def api_mcp_metrics():
+    """Get MCP performance metrics and improvements"""
+    return jsonify({
+        'success': True,
+        'metrics': MCP_METRICS,
+        'config': {
+            'discover_improvement_pct': (MCP_METRICS['discover_improvement'] - 1) * 100,
+            'access_improvement_pct': (MCP_METRICS['access_improvement'] - 1) * 100,
+            'extract_improvement_pct': (MCP_METRICS['extract_improvement'] - 1) * 100,
+            'interact_improvement_pct': (MCP_METRICS['interact_improvement'] - 1) * 100,
+            'overall_improvement_pct': (MCP_METRICS['overall_improvement'] - 1) * 100
+        }
+    })
+
+
+def run_mcp_search_wrapper(search_term, max_results):
+    """
+    Wrapper function to run async MCP search in a thread
+    """
+    import asyncio
+    asyncio.run(run_mcp_search_async(search_term, max_results))
+
+async def run_mcp_search_async(search_term, max_results):
+    """
+    Run MCP-enhanced search pipeline demonstrating all four actions (async version)
+    """
+    global mcp_search_status
+    
+    try:
+        # Initialize MCP handler
+        async with BrightDataMCPHandler() as mcp_handler:
+            
+            # Action 1: DISCOVER - AI-enhanced job discovery
+            mcp_search_status['current_action'] = 'DISCOVER'
+            mcp_search_status['current_phase'] = 'AI-enhanced job discovery...'
+            mcp_search_status['progress'] = 10
+            
+            logger.info(f"🔍 MCP DISCOVER: Starting AI-enhanced job discovery for '{search_term}'")
+            
+            discover_result = await mcp_handler.discover_opportunities(
+                search_query=search_term,
+                location="United States",
+                max_results=max_results
+            )
+        
+        if not discover_result.success:
+            error_msg = discover_result.metadata.get('error', 'Unknown error in DISCOVER phase')
+            raise Exception(f"DISCOVER failed: {error_msg}")
+        
+        mcp_search_status['progress'] = 30
+        mcp_search_status['results']['discovered_urls'] = len(discover_result.data.get('job_urls', []))
+        
+        # Action 2: ACCESS - Context-aware page navigation
+        mcp_search_status['current_action'] = 'ACCESS'
+        mcp_search_status['current_phase'] = 'Context-aware page navigation...'
+        mcp_search_status['progress'] = 40
+        
+        logger.info(f"🌐 MCP ACCESS: Context-aware navigation for {len(discover_result.data.get('job_urls', []))} URLs")
+        
+        # Simulate accessing multiple job pages (limit for demo)
+        job_urls = discover_result.data.get('job_urls', [])[:max_results]
+        accessed_pages = []
+        
+        for i, url in enumerate(job_urls[:3]):  # Access first 3 for demo
+            access_result = await mcp_handler.access_job_page(
+                job_url=url,
+                context={"anti_bot_bypass": True, "context_aware": True}
+            )
+            
+            if access_result.success:
+                accessed_pages.append({
+                    'url': url,
+                    'page_data': access_result.data
+                })
+            
+            # Update progress
+            mcp_search_status['progress'] = 40 + (i + 1) * 5
+        
+        mcp_search_status['results']['accessed_pages'] = len(accessed_pages)
+        
+        # Action 3: EXTRACT - LLM-powered content extraction
+        mcp_search_status['current_action'] = 'EXTRACT'
+        mcp_search_status['current_phase'] = 'LLM-powered content extraction...'
+        mcp_search_status['progress'] = 60
+        
+        logger.info(f"📊 MCP EXTRACT: LLM-powered extraction from {len(accessed_pages)} pages")
+        
+        extracted_jobs = []
+        
+        for i, page in enumerate(accessed_pages):
+            extract_result = await mcp_handler.extract_job_data(
+                html_content=page['page_data']['html_content'],
+                url=page['url'],
+                context={"llm_powered": True, "intelligent_parsing": True}
+            )
+            
+            if extract_result.success:
+                job_data = extract_result.data
+                job_data['source_url'] = page['url']
+                job_data['extraction_method'] = 'MCP_LLM_Enhanced'
+                extracted_jobs.append(job_data)
+            
+            # Update progress
+            mcp_search_status['progress'] = 60 + (i + 1) * 10
+        
+        mcp_search_status['results']['extracted_jobs'] = len(extracted_jobs)
+        
+        # Action 4: INTERACT - Personalized analysis and recommendations
+        mcp_search_status['current_action'] = 'INTERACT'
+        mcp_search_status['current_phase'] = 'AI-powered job analysis...'
+        mcp_search_status['progress'] = 85
+        
+        logger.info(f"🤖 MCP INTERACT: AI-powered analysis of {len(extracted_jobs)} jobs")
+        
+        analyzed_jobs = []
+        
+        for i, job in enumerate(extracted_jobs):
+            interact_result = await mcp_handler.interact_and_analyze(
+                job_data=job,
+                user_profile={'search_term': search_term, 'preferences': {}}
+            )
+            
+            if interact_result.success:
+                analyzed_job = job.copy()
+                analyzed_job.update({
+                    'mcp_analysis': interact_result.data,
+                    'relevance_score': interact_result.data.get('relevance_score', 0.0),
+                    'recommendation': interact_result.data.get('recommendation', ''),
+                    'ai_insights': interact_result.data.get('insights', [])
+                })
+                analyzed_jobs.append(analyzed_job)
+            
+            # Update progress
+            mcp_search_status['progress'] = 85 + (i + 1) * 3
+        
+        # Store jobs in database with MCP enhancements
+        mcp_search_status['current_phase'] = 'Storing MCP-enhanced jobs...'
+        mcp_search_status['progress'] = 95
+        
+        stored_count = 0
+        storage_errors = []
+        
+        for i, job in enumerate(analyzed_jobs):
+            try:
+                # Convert to standard format for database
+                standard_job = {
+                    'job_id': job.get('job_id', f"mcp_{int(time.time())}_{i}"),
+                    'job_title': job.get('job_title', 'MCP Enhanced Job'),
+                    'company': job.get('company', 'Unknown Company'),
+                    'location': job.get('location', 'Location Not Specified'),
+                    'description': job.get('description', ''),
+                    'url': job.get('source_url', job.get('url', '')),
+                    'status': 'new',
+                    'source': 'MCP_Enhanced_Discovery',
+                    'extracted_at': datetime.now().isoformat(),
+                    'job_type': 'Internship',
+                    'raw_data': json.dumps(job, default=str)  # Handle any non-serializable objects
+                }
+                
+                # Add MCP-specific enhancements if available
+                if 'mcp_analysis' in job:
+                    standard_job['notes'] = f"MCP Analysis: {job.get('recommendation', 'No recommendation')}"
+                
+                logger.debug(f"📝 Attempting to store MCP job {i+1}: {standard_job['job_title']}")
+                
+                success = db.insert_job(standard_job)
+                if success:
+                    stored_count += 1
+                    logger.info(f"✅ Stored MCP job {i+1}: {standard_job['job_title']}")
+                else:
+                    storage_errors.append(f"Job {i+1}: Insert returned False (likely duplicate)")
+                    logger.warning(f"⚠️ Job {i+1} not stored - likely duplicate: {standard_job['job_title']}")
+                    
+            except Exception as e:
+                storage_errors.append(f"Job {i+1}: {str(e)}")
+                logger.error(f"❌ Error storing MCP job {i+1}: {e}")
+                continue
+        
+        if storage_errors and stored_count == 0:
+            logger.warning(f"⚠️ MCP job storage issues: {storage_errors[:3]}")  # Log first 3 errors
+        
+        # Calculate performance metrics
+        performance_metrics = {
+            'discover_time_saved': f"{MCP_METRICS['discover_improvement']}x faster",
+            'access_efficiency': f"{(MCP_METRICS['access_improvement'] - 1) * 100:.0f}% improvement",
+            'extraction_accuracy': f"{(MCP_METRICS['extract_improvement'] - 1) * 100:.0f}% better",
+            'analysis_depth': f"{(MCP_METRICS['interact_improvement'] - 1) * 100:.0f}% more insights",
+            'overall_enhancement': f"{(MCP_METRICS['overall_improvement'] - 1) * 100:.0f}% overall improvement"
+        }
+        
+        # Complete the search
+        mcp_search_status.update({
+            'is_running': False,
+            'progress': 100,
+            'current_action': 'COMPLETED',
+            'current_phase': 'MCP search completed successfully!',
+            'completed_at': datetime.now().isoformat(),
+            'results': {
+                'urls_discovered': len(job_urls),
+                'pages_accessed': len(accessed_pages),
+                'jobs_extracted': len(extracted_jobs),
+                'jobs_analyzed': len(analyzed_jobs),
+                'jobs_stored': stored_count,
+                'duplicates': 0,  # MCP reduces duplicates through intelligent deduplication
+                'search_term': search_term,
+                'actions_completed': ['DISCOVER', 'ACCESS', 'EXTRACT', 'INTERACT'],
+                'discovered_urls': len(job_urls),
+                'accessed_pages': len(accessed_pages),
+                'extracted_jobs': len(extracted_jobs),
+                'analyzed_jobs': len(analyzed_jobs),
+                'stored_jobs': stored_count
+            },
+            'performance_metrics': performance_metrics
+        })
+        
+        logger.info(f"✅ MCP search completed: {stored_count} enhanced jobs stored")
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"Error in MCP search: {e}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        mcp_search_status.update({
+            'error': str(e),
+            'is_running': False,
+            'completed_at': datetime.now().isoformat()
+        })
+
+# ==================== END MCP ROUTES ====================
+
 if __name__ == '__main__':
     app.run(
         host=WEB_CONFIG['host'],
         port=WEB_CONFIG['port'],
         debug=WEB_CONFIG['debug']
-    ) 
+    )

@@ -25,3 +25,7 @@ langdetect>=1.0.9
 # Additional utilities
 urllib3>=2.0.0
 certifi>=2023.0.0
+
+# Async HTTP client for MCP integration
+aiohttp>=3.8.0
+asyncio-extra>=1.0.0
