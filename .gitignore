@@ -3,3 +3,12 @@
 *.sqlite3
 *.pyc
 __pycache__/
+/linkedinscraper-main
+
+# Output/log files
+*.json
+
+# Backup and temporary Python files
+*_backup.py
+*_fixed.py
+fix_*.py
