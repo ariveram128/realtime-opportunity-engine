@@ -19,7 +19,7 @@ RATE_LIMIT_DELAY = float(os.getenv('RATE_LIMIT_DELAY', 2.0))  # Access Phase rat
 
 # Database Configuration
 DATABASE_CONFIG = {
-    'db_path': 'internship_opportunities.db',
+    'db_path': 'data/internship_opportunities.db',
     'jobs_table': 'job_postings',
     'filtered_jobs_table': 'filtered_jobs'
 }
