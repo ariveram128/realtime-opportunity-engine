@@ -471,6 +471,141 @@ class DatabaseManager:
             if close_conn:
                 conn.close()
     
+    def delete_job(self, job_id: str) -> bool:
+        """
+        Delete a single job by job_id
+        
+        Args:
+            job_id (str): Unique job ID
+        
+        Returns:
+            bool: True if deleted successfully
+        """
+        conn = self._get_connection()
+        close_conn = not self._conn
+        
+        try:
+            cursor = conn.cursor()
+            
+            cursor.execute(f'''
+                DELETE FROM {self.jobs_table}
+                WHERE job_id = ?
+            ''', (job_id,))
+            
+            deleted = cursor.rowcount > 0
+            conn.commit()
+            
+            if deleted:
+                logger.info(f"Deleted job: {job_id}")
+            
+            return deleted
+        except sqlite3.Error as e:
+            logger.error(f"Error deleting job {job_id}: {e}")
+            return False
+        finally:
+            if close_conn:
+                conn.close()
+    
+    def delete_jobs_by_status(self, status: str) -> int:
+        """
+        Delete all jobs with a specific status
+        
+        Args:
+            status (str): Status to delete
+        
+        Returns:
+            int: Number of jobs deleted
+        """
+        conn = self._get_connection()
+        close_conn = not self._conn
+        
+        try:
+            cursor = conn.cursor()
+            
+            cursor.execute(f'''
+                DELETE FROM {self.jobs_table}
+                WHERE status = ?
+            ''', (status,))
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+            logger.info(f"Deleted {deleted_count} jobs with status: {status}")
+            return deleted_count
+        except sqlite3.Error as e:
+            logger.error(f"Error deleting jobs by status {status}: {e}")
+            return 0
+        finally:
+            if close_conn:
+                conn.close()
+    
+    def delete_all_jobs(self) -> int:
+        """
+        Delete ALL jobs from the database (use with caution!)
+        
+        Returns:
+            int: Number of jobs deleted
+        """
+        conn = self._get_connection()
+        close_conn = not self._conn
+        
+        try:
+            cursor = conn.cursor()
+            
+            # First get count for logging
+            cursor.execute(f'SELECT COUNT(*) FROM {self.jobs_table}')
+            total_count = cursor.fetchone()[0]
+            
+            # Delete all jobs
+            cursor.execute(f'DELETE FROM {self.jobs_table}')
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+            logger.warning(f"Deleted ALL {deleted_count} jobs from database")
+            return deleted_count
+        except sqlite3.Error as e:
+            logger.error(f"Error deleting all jobs: {e}")
+            return 0
+        finally:
+            if close_conn:
+                conn.close()
+    
+    def remove_duplicate_jobs(self) -> int:
+        """
+        Remove duplicate jobs (keeping the most recent one)
+        
+        Returns:
+            int: Number of duplicate jobs removed
+        """
+        conn = self._get_connection()
+        close_conn = not self._conn
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Find duplicates based on URL, job_title, and company
+            cursor.execute(f'''
+                DELETE FROM {self.jobs_table}
+                WHERE id NOT IN (
+                    SELECT MIN(id)
+                    FROM {self.jobs_table}
+                    GROUP BY url, job_title, company
+                )
+            ''')
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+            logger.info(f"Removed {deleted_count} duplicate jobs")
+            return deleted_count
+        except sqlite3.Error as e:
+            logger.error(f"Error removing duplicate jobs: {e}")
+            return 0
+        finally:
+            if close_conn:
+                conn.close()
+    
     def close(self):
         """Close database connection"""
         if self._conn:
