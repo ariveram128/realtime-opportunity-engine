@@ -16,11 +16,14 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from typing import Dict, Optional
 
 # Local imports
-from database_manager import DatabaseManager
+from .database_manager import DatabaseManager
 from config import WEB_CONFIG
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize Flask app with correct paths
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__, 
+           template_folder=os.path.join(project_root, 'templates'),
+           static_folder=os.path.join(project_root, 'static'))
 app.secret_key = WEB_CONFIG.get('secret_key', 'dev-key-change-in-production')
 
 # Initialize logging
@@ -356,8 +359,8 @@ def run_realtime_search(search_term, max_results):
     
     try:
         # Import our new LinkedIn scraper and other components
-        from linkedin_scraper_handler import LinkedInScraperHandler
-        from job_filter import JobFilter
+        from .linkedin_scraper_handler import LinkedInScraperHandler
+        from .job_filter import JobFilter
         
         # Phase 1: LinkedIn Job Discovery
         realtime_search_status['current_phase'] = 'Discovering LinkedIn jobs...'

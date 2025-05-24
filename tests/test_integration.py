@@ -4,8 +4,14 @@ Integration test for AI Internship Opportunity Finder
 Tests the extraction → filtering → storage pipeline
 """
 
+import sys
+import os
+
+# Add the parent directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from main import extraction_phase, filtering_phase, storage_phase
-from database_manager import DatabaseManager
+from src.database_manager import DatabaseManager
 import logging
 
 # Set up logging

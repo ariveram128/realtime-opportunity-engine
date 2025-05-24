@@ -83,7 +83,7 @@ MAX_RETRIES = 3
 
 ```bash
 # Start the Flask web application
-python app.py
+python run.py
 ```
 
 Then open http://localhost:5000 in your browser.
@@ -103,7 +103,7 @@ Then open http://localhost:5000 in your browser.
 ### 🌐 Web Interface Mode (Recommended)
 ```bash
 # Start web application with real-time search
-python app.py
+python run.py
 ```
 
 **Features:**
@@ -299,13 +299,20 @@ WEB_CONFIG = {
 
 ```
 opportunity_finder/
-├── 📄 app.py                         # Flask web application with real-time search
-├── 🔍 linkedin_scraper_handler.py    # LinkedIn Job Scraper API integration
-├── 💾 database_manager.py            # SQLite database operations and job storage
-├── 🎯 job_filter.py                  # Intelligent filtering for internships
+├── 📄 run.py                         # Main entry point for web application
+├── 📄 main.py                        # Command-line interface (legacy)
 ├── ⚙️ config.py                      # Configuration settings and API endpoints
 ├── 📋 requirements.txt               # Python dependencies
 ├── 📚 README.md                      # This file
+├── 💾 internship_opportunities.db    # SQLite database (auto-created)
+├── 📁 src/                           # Source code directory
+│   ├── __init__.py                   # Package initialization
+│   ├── app.py                        # Flask web application with real-time search
+│   ├── linkedin_scraper_handler.py   # LinkedIn Job Scraper API integration
+│   ├── database_manager.py           # SQLite database operations and job storage
+│   ├── job_filter.py                 # Intelligent filtering for internships
+│   ├── brightdata_handler.py         # Bright Data API handlers (legacy)
+│   └── data_extractor.py             # Job data extraction logic (legacy)
 ├── 🌐 templates/                     # HTML templates for web interface
 │   ├── base.html                     # Base template with navigation and styles
 │   ├── index.html                    # Main job listing with real-time search
@@ -316,10 +323,17 @@ opportunity_finder/
 │   ├── css/                          # Custom stylesheets and themes
 │   ├── js/                           # JavaScript for real-time updates
 │   └── favicon.ico.png               # Application icon
-├── 💾 internship_opportunities.db    # SQLite database (auto-created)
-├── 🔧 linkedin_scraper_handler.py    # API handler for LinkedIn job discovery
-├── 📊 main.py                        # Command-line interface (legacy)
-└── ⚙️ config.py                      # Configuration and API settings
+├── 🧪 tests/                         # Test files
+│   ├── __init__.py                   # Test package initialization
+│   ├── test_integration.py           # Integration tests
+│   ├── test_brightdata_connection.py # API connection tests
+│   └── ...                           # Other test files
+├── 📜 scripts/                       # Utility scripts
+│   ├── __init__.py                   # Scripts package initialization
+│   ├── add_sample_jobs.py            # Add sample data for testing
+│   └── debug_linkedin_data.py        # Debug utilities
+├── 📊 data/                          # Data storage directory
+└── 📤 output/                        # Generated files directory
 ```
 
 ---
@@ -412,7 +426,7 @@ curl http://localhost:3000/health
 # Check if port 5000 is available
 netstat -an | grep 5000
 
-# Try different port: python app.py --port 8080
+# Try different port: python run.py --port 8080
 # Access via http://localhost:5000
 ```
 

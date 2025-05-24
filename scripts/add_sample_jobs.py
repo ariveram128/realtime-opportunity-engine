@@ -3,7 +3,13 @@
 Add sample jobs for testing search functionality
 """
 
-from database_manager import DatabaseManager
+import sys
+import os
+
+# Add the parent directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from src.database_manager import DatabaseManager
 from datetime import datetime, timedelta
 import json
 

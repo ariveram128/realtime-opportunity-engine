@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Import our components
-from brightdata_handler import BrightDataSERPHandler, test_connection
-from database_manager import DatabaseManager
-from job_filter import JobFilter
+from src.brightdata_handler import BrightDataSERPHandler, test_connection
+from src.database_manager import DatabaseManager
+from src.job_filter import JobFilter
 from config import validate_config, SEARCH_CONFIG, FILTERING_CONFIG
 
 
@@ -214,7 +214,7 @@ def extraction_phase(urls: List[str], max_jobs: int = None) -> List[Dict]:
     
     # Import data extractor
     try:
-        from data_extractor import JobDataExtractor
+        from src.data_extractor import JobDataExtractor
         extractor = JobDataExtractor()
         job_data_list = extractor.extract_multiple_jobs(urls, max_jobs or len(urls))
         extractor.close()
