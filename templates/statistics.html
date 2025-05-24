@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - AI Internship Finder{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-chart-bar"></i> Job Application Statistics</h1>
+        <button class="btn btn-outline-secondary" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Jobs</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_jobs }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-briefcase fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Applications Sent</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.by_status.get('applied', 0) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-paper-plane fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Interviews</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.by_status.get('interview', 0) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">New This Week</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.recent_jobs }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-week fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Status Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Application Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="100" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Companies -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Companies</h6>
+                </div>
+                <div class="card-body">
+                                        {% if stats.top_companies %}                    <div class="list-group list-group-flush">                        {% for company, count in (stats.top_companies.items() | list)[:10] %}                        <div class="list-group-item d-flex justify-content-between align-items-center">                            <span>{{ company }}</span>                            <span class="badge badge-primary badge-pill">{{ count }}</span>                        </div>                        {% endfor %}                    </div>                    {% else %}
+                    <p class="text-muted text-center">No company data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Breakdown -->
+    <div class="row">
+        <!-- Status Breakdown -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Detailed Status Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    {% if stats.by_status %}
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                {% for status, count in stats.by_status.items() %}
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-{{ 'success' if status == 'applied' else 'secondary' if status == 'new' else 'warning' if status == 'interested' else 'info' if status == 'interview' else 'danger' }}">
+                                            {{ status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td class="text-right">{{ count }}</td>
+                                    <td class="text-right">
+                                        {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No status data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Locations -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Job Locations</h6>
+                </div>
+                <div class="card-body">
+                                        {% if stats.top_locations %}                    <div class="list-group list-group-flush">                        {% for location, count in (stats.top_locations.items() | list)[:10] %}                        <div class="list-group-item d-flex justify-content-between align-items-center">                            <span><i class="fas fa-map-marker-alt text-muted"></i> {{ location }}</span>                            <span class="badge badge-secondary badge-pill">{{ count }}</span>                        </div>                        {% endfor %}                    </div>                    {% else %}
+                    <p class="text-muted text-center">No location data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Rate Card -->
+    {% if stats.total_jobs > 0 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Application Success Metrics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-right border-gray-200 h-100 py-3">
+                                <div class="h4 font-weight-bold text-primary">
+                                    {{ "%.1f"|format((stats.by_status.get('applied', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                </div>
+                                <div class="text-muted">Application Rate</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-right border-gray-200 h-100 py-3">
+                                <div class="h4 font-weight-bold text-success">
+                                    {{ "%.1f"|format((stats.by_status.get('interview', 0) / stats.by_status.get('applied', 1) * 100) if stats.by_status.get('applied', 0) > 0 else 0) }}%
+                                </div>
+                                <div class="text-muted">Interview Rate</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-right border-gray-200 h-100 py-3">
+                                <div class="h4 font-weight-bold text-info">
+                                    {{ "%.1f"|format((stats.by_status.get('interested', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                </div>
+                                <div class="text-muted">Interest Rate</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h-100 py-3">
+                                <div class="h4 font-weight-bold text-warning">
+                                    {{ "%.1f"|format((stats.by_status.get('rejected', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                </div>
+                                <div class="text-muted">Rejection Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Status Distribution Pie Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusData = {
+    labels: [
+        {% for status, count in stats.by_status.items() %}
+        '{{ status.replace("_", " ").title() }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for status, count in stats.by_status.items() %}
+            {{ count }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#28a745', // Applied - Green
+            '#6c757d', // New - Gray
+            '#ffc107', // Interested - Yellow
+            '#17a2b8', // Interview - Cyan
+            '#dc3545', // Rejected - Red
+            '#fd7e14', // Not Interested - Orange
+            '#6f42c1'  // Hidden - Purple
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
+    }]
+};
+
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: statusData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.border-gray-200 {
+    border-color: #e3e6f0 !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+#statusChart {
+    height: 300px !important;
+}
+</style>
+{% endblock %} 

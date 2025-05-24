@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - AI Internship Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Error 404 Graphic -->
+            <div class="error-404">
+                <div class="error-number">
+                    <h1 class="display-1 font-weight-bold text-primary">404</h1>
+                </div>
+                <div class="error-message mb-4">
+                    <h2 class="h4 text-gray-800">Oops! Page Not Found</h2>
+                    <p class="lead text-gray-600">
+                        The page you're looking for doesn't exist or has been moved.
+                    </p>
+                </div>
+                
+                <!-- Error Actions -->
+                <div class="error-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg mb-2">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                    <br>
+                    <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i> Search Jobs
+                    </a>
+                    <a href="{{ url_for('statistics') }}" class="btn btn-outline-secondary ml-2">
+                        <i class="fas fa-chart-bar"></i> View Statistics
+                    </a>
+                </div>
+                
+                <!-- Helpful Links -->
+                <div class="mt-4">
+                    <h5 class="text-gray-700">Popular Pages:</h5>
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-briefcase text-primary"></i> Job Dashboard
+                        </a>
+                        <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-search text-info"></i> Advanced Search
+                        </a>
+                        <a href="{{ url_for('statistics') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-chart-bar text-success"></i> Application Statistics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-404 {
+    padding: 3rem 0;
+}
+
+.error-number h1 {
+    font-size: 8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-gray-600 {
+    color: #6c757d !important;
+}
+
+.text-gray-700 {
+    color: #5a6169 !important;
+}
+
+.text-gray-800 {
+    color: #343a40 !important;
+}
+
+.list-group-item {
+    border: none;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.5rem;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+    .error-number h1 {
+        font-size: 5rem;
+    }
+    
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+    }
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Internship Opportunity Finder{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Custom styles inspired by modern job search interfaces */
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .job-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .job-card.status-applied {
+            border-left: 4px solid #17a2b8;
+            background-color: #f0f8ff;
+        }
+        
+        .job-card.status-interview {
+            border-left: 4px solid #28a745;
+            background-color: #f0fff4;
+        }
+        
+        .job-card.status-rejected {
+            border-left: 4px solid #dc3545;
+            background-color: #fff5f5;
+        }
+        
+        .job-card.status-hidden {
+            opacity: 0.6;
+        }
+        
+        .job-title {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .company-name {
+            color: #0066cc;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        
+        .company-name:hover {
+            text-decoration: underline;
+        }
+        
+        .job-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .btn-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 0.25rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-status:hover {
+            transform: scale(1.05);
+        }
+        
+        .search-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            height: fit-content;
+        }
+        
+        .filter-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .pagination {
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .page-link {
+            border-radius: 8px;
+            margin: 0 2px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .job-card {
+                margin-bottom: 1rem;
+            }
+            
+            .btn-status {
+                display: block;
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-search me-2"></i>
+                AI Internship Finder
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('search') }}">
+                            <i class="fas fa-search me-1"></i>Search
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('statistics') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Statistics
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="statusDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-filter me-1"></i>Filter by Status
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='all') }}">All Jobs</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='new') }}">New</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='interested') }}">Interested</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='applied') }}">Applied</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='interview') }}">Interview</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('index', status='rejected') }}">Rejected</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light mt-5 py-4">
+        <div class="container text-center">
+            <p class="text-muted mb-0">
+                <i class="fas fa-robot me-2"></i>
+                AI Internship Opportunity Finder - Powered by Bright Data
+            </p>
+            <small class="text-muted">
+                Find your dream internship with intelligent job discovery and filtering
+            </small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Global JavaScript functions
+        function updateJobStatus(jobId, status, button) {
+            // Disable button during request
+            $(button).prop('disabled', true);
+            
+            $.ajax({
+                url: '/update_status',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    job_id: jobId,
+                    status: status
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        // Update button states
+                        $(button).closest('.job-card').find('.btn-status').removeClass('active');
+                        $(button).addClass('active');
+                        
+                        // Update card styling
+                        const card = $(button).closest('.job-card');
+                        card.removeClass('status-new status-applied status-interview status-rejected status-hidden status-interested status-not_interested');
+                        card.addClass('status-' + status.replace(' ', '_').toLowerCase());
+                        
+                        // Show success message
+                        showToast('Success', response.message, 'success');
+                        
+                        // If hidden, fade out the card
+                        if (status === 'hidden') {
+                            card.fadeOut(500);
+                        }
+                    } else {
+                        showToast('Error', response.error, 'error');
+                    }
+                },
+                error: function() {
+                    showToast('Error', 'Failed to update job status', 'error');
+                },
+                complete: function() {
+                    $(button).prop('disabled', false);
+                }
+            });
+        }
+        
+        function showToast(title, message, type) {
+            // Simple toast notification
+            const toastContainer = $('#toast-container');
+            if (toastContainer.length === 0) {
+                $('body').append('<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>');
+            }
+            
+            const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+            const toast = $(`
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <strong>${title}:</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            
+            $('#toast-container').append(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(function() {
+                toast.alert('close');
+            }, 5000);
+        }
+        
+        // Initialize tooltips
+        $(document).ready(function() {
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html> 

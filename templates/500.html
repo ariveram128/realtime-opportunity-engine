@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - AI Internship Finder{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center">
+            <!-- Error 500 Graphic -->
+            <div class="error-500">
+                <div class="error-number">
+                    <h1 class="display-1 font-weight-bold text-danger">500</h1>
+                </div>
+                <div class="error-message mb-4">
+                    <h2 class="h4 text-gray-800">Internal Server Error</h2>
+                    <p class="lead text-gray-600">
+                        Something went wrong on our end. We're working to fix this issue.
+                    </p>
+                </div>
+                
+                <!-- Error Details -->
+                <div class="alert alert-warning text-left mb-4">
+                    <h6><i class="fas fa-exclamation-triangle"></i> What happened?</h6>
+                    <ul class="mb-0 pl-3">
+                        <li>The server encountered an unexpected condition</li>
+                        <li>Database connection might be temporarily unavailable</li>
+                        <li>An internal application error occurred</li>
+                    </ul>
+                </div>
+                
+                <!-- Error Actions -->
+                <div class="error-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg mb-3">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                    <br>
+                    <button onclick="window.location.reload()" class="btn btn-outline-secondary mr-2">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </button>
+                </div>
+                
+                <!-- Troubleshooting Tips -->
+                <div class="mt-4">
+                    <h5 class="text-gray-700">Troubleshooting Tips:</h5>
+                    <div class="card text-left">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-lightbulb text-warning"></i> Quick Fixes</h6>
+                                    <ul class="small">
+                                        <li>Refresh the page</li>
+                                        <li>Clear your browser cache</li>
+                                        <li>Try again in a few minutes</li>
+                                        <li>Check your internet connection</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-tools text-info"></i> Still Not Working?</h6>
+                                    <ul class="small">
+                                        <li>Use the main dashboard</li>
+                                        <li>Try a different browser</li>
+                                        <li>Restart the application</li>
+                                        <li>Check server logs</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Info (for developers) -->
+                {% if config.DEBUG %}
+                <div class="mt-4 text-left">
+                    <h6 class="text-danger">Debug Information:</h6>
+                    <div class="alert alert-danger">
+                        <small>
+                            <strong>Timestamp:</strong> {{ moment().format() }}<br>
+                            <strong>URL:</strong> {{ request.url }}<br>
+                            <strong>Method:</strong> {{ request.method }}<br>
+                            <strong>User Agent:</strong> {{ request.user_agent }}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-500 {
+    padding: 3rem 0;
+}
+
+.error-number h1 {
+    font-size: 8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.text-gray-600 {
+    color: #6c757d !important;
+}
+
+.text-gray-700 {
+    color: #5a6169 !important;
+}
+
+.text-gray-800 {
+    color: #343a40 !important;
+}
+
+.alert {
+    border-radius: 0.5rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+ul.small {
+    font-size: 0.875rem;
+}
+
+ul.small li {
+    margin-bottom: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .error-number h1 {
+        font-size: 5rem;
+    }
+    
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .col-md-6 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animation for error number */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.error-number h1 {
+    animation: pulse 2s ease-in-out infinite;
+}
+</style>
+
+<script>
+// Auto-refresh option
+document.addEventListener('DOMContentLoaded', function() {
+    // Add a subtle auto-refresh after 30 seconds
+    setTimeout(function() {
+        if (confirm('The page will refresh automatically. Click OK to refresh now or Cancel to stay.')) {
+            window.location.reload();
+        }
+    }, 30000);
+});
+</script>
+{% endblock %} 
