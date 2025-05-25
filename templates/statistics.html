@@ -1,78 +1,413 @@
 {% extends "base.html" %}
 
-{% block title %}Statistics - AI Internship Finder{% endblock %}
+{% block title %}Analytics Dashboard - Professional Job Discovery Platform{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+        --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 12px 48px rgba(0, 0, 0, 0.15);
+        --shadow-heavy: 0 20px 64px rgba(0, 0, 0, 0.2);
+        
+        --border-radius: 16px;
+        --border-radius-sm: 8px;
+        --border-radius-lg: 24px;
+        
+        --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        --transition-fast: all 0.2s ease-out;
+    }
+
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 75%, #f5576c 100%);
+        background-attachment: fixed;
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        overflow-x: hidden;
+    }
+
+    /* Professional Header */
+    .professional-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-medium);
+    }
+
+    .professional-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        animation: rotate 20s linear infinite;
+        z-index: -1;
+    }
+
+    @keyframes rotate {
+        to { transform: rotate(360deg); }
+    }
+
+    .professional-header h1 {
+        background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .professional-header p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    /* Professional Stats Cards */
+    .professional-stats-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+        transition: var(--transition-smooth);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .professional-stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        transform: scaleX(0);
+        transition: var(--transition-smooth);
+        transform-origin: left;
+    }
+
+    .professional-stats-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .professional-stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-light);
+    }
+
+    .stat-icon.total { background: var(--primary-gradient); }
+    .stat-icon.applied { background: var(--success-gradient); }
+    .stat-icon.interview { background: var(--success-gradient); }
+    .stat-icon.recent { background: var(--warning-gradient); }
+
+    /* Professional Charts */
+    .professional-chart-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-medium);
+        overflow: hidden;
+        transition: var(--transition-smooth);
+    }
+
+    .professional-chart-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .professional-chart-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+
+    .professional-chart-header h6 {
+        margin: 0;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .professional-chart-body {
+        padding: 2rem;
+    }
+
+    /* Professional List Items */
+    .professional-list-item {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: var(--border-radius-sm);
+        margin-bottom: 0.75rem;
+        padding: 1rem 1.5rem;
+        transition: var(--transition-smooth);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .professional-list-item:hover {
+        background: rgba(102, 126, 234, 0.1);
+        border-color: #667eea;
+        transform: translateX(5px);
+    }
+
+    .professional-badge {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: var(--shadow-light);
+    }
+
+    /* Professional Tables */
+    .professional-table {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+    }
+
+    .professional-table th {
+        background: var(--primary-gradient);
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 1rem;
+        border: none;
+        font-size: 0.85rem;
+    }
+
+    .professional-table td {
+        padding: 1rem;
+        border: none;
+        background: rgba(255, 255, 255, 0.8);
+        transition: var(--transition-fast);
+    }
+
+    .professional-table tr:hover td {
+        background: rgba(102, 126, 234, 0.1);
+    }
+
+    /* Professional Metrics */
+    .professional-metrics-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-medium);
+        text-align: center;
+        transition: var(--transition-smooth);
+    }
+
+    .professional-metrics-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-value.primary { 
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.success { 
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.info { 
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-value.warning { 
+        background: var(--warning-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-label {
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .professional-header h1 {
+            font-size: 2rem;
+        }
+        
+        .professional-header {
+            padding: 1.5rem;
+        }
+        
+        .professional-stats-card {
+            margin-bottom: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+        }
+    }
+
+    /* Animation Classes */
+    .fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-up {
+        animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0"><i class="fas fa-chart-bar"></i> Job Application Statistics</h1>
-        <button class="btn btn-outline-secondary" onclick="location.reload()">
-            <i class="fas fa-sync-alt"></i> Refresh
-        </button>
-    </div>
+<!-- Professional Header -->
+<div class="professional-header text-center">
+    <h1>
+        <i class="fas fa-chart-line me-3"></i>
+        Analytics Dashboard
+    </h1>
+    <p>Comprehensive insights into your job search performance and opportunities</p>
+</div>
 
-    <!-- Overview Cards -->
+<div class="container-fluid">
+    <!-- Overview Stats Cards -->
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Jobs</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_jobs }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-briefcase fa-2x text-gray-300"></i>
-                        </div>
+            <div class="professional-stats-card fade-in">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon total">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="stat-number">{{ stats.total_jobs }}</div>
+                        <div class="stat-label">Total Opportunities</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Applications Sent</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.by_status.get('applied', 0) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-paper-plane fa-2x text-gray-300"></i>
-                        </div>
+            <div class="professional-stats-card fade-in">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon applied">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="stat-number">{{ stats.by_status.get('applied', 0) }}</div>
+                        <div class="stat-label">Applications Sent</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Interviews</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.by_status.get('interview', 0) }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
-                        </div>
+            <div class="professional-stats-card fade-in">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon interview">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="stat-number">{{ stats.by_status.get('interview', 0) }}</div>
+                        <div class="stat-label">Interviews Scheduled</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">New This Week</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.recent_jobs }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-week fa-2x text-gray-300"></i>
-                        </div>
+            <div class="professional-stats-card fade-in">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon recent">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="stat-number">{{ stats.recent_jobs }}</div>
+                        <div class="stat-label">Recent Discoveries</div>
                     </div>
                 </div>
             </div>
@@ -83,11 +418,11 @@
     <div class="row mb-4">
         <!-- Status Distribution -->
         <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Application Status Distribution</h6>
+            <div class="professional-chart-card slide-up">
+                <div class="professional-chart-header">
+                    <h6><i class="fas fa-pie-chart me-2"></i>Application Status Distribution</h6>
                 </div>
-                <div class="card-body">
+                <div class="professional-chart-body">
                     <canvas id="statusChart" width="100" height="50"></canvas>
                 </div>
             </div>
@@ -95,42 +430,64 @@
 
         <!-- Top Companies -->
         <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Companies</h6>
+            <div class="professional-chart-card slide-up">
+                <div class="professional-chart-header">
+                    <h6><i class="fas fa-building me-2"></i>Top Target Companies</h6>
                 </div>
-                <div class="card-body">
-                                        {% if stats.top_companies %}                    <div class="list-group list-group-flush">                        {% for company, count in (stats.top_companies.items() | list)[:10] %}                        <div class="list-group-item d-flex justify-content-between align-items-center">                            <span>{{ company }}</span>                            <span class="badge badge-primary badge-pill">{{ count }}</span>                        </div>                        {% endfor %}                    </div>                    {% else %}
-                    <p class="text-muted text-center">No company data available</p>
+                <div class="professional-chart-body">
+                    {% if stats.top_companies %}
+                        {% for company, count in (stats.top_companies.items() | list)[:10] %}
+                        <div class="professional-list-item">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <i class="fas fa-building me-3 text-primary"></i>
+                                <span class="fw-semibold">{{ company }}</span>
+                            </div>
+                            <div class="professional-badge">{{ count }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-building fa-3x mb-3 opacity-50"></i>
+                            <p>No company data available yet</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Detailed Breakdown -->
-    <div class="row">
+    <!-- Detailed Analysis Row -->
+    <div class="row mb-4">
         <!-- Status Breakdown -->
         <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Detailed Status Breakdown</h6>
+            <div class="professional-chart-card slide-up">
+                <div class="professional-chart-header">
+                    <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
                 </div>
-                <div class="card-body">
+                <div class="professional-chart-body">
                     {% if stats.by_status %}
-                    <div class="table-responsive">
-                        <table class="table table-borderless">
+                    <div class="professional-table">
+                        <table class="table table-borderless mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-center">Count</th>
+                                    <th class="text-center">Percentage</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for status, count in stats.by_status.items() %}
                                 <tr>
                                     <td>
-                                        <span class="badge badge-{{ 'success' if status == 'applied' else 'secondary' if status == 'new' else 'warning' if status == 'interested' else 'info' if status == 'interview' else 'danger' }}">
+                                        <span class="badge {{ 'bg-success' if status == 'applied' else 'bg-secondary' if status == 'new' else 'bg-warning' if status == 'interested' else 'bg-info' if status == 'interview' else 'bg-danger' }} me-2">
                                             {{ status.replace('_', ' ').title() }}
                                         </span>
                                     </td>
-                                    <td class="text-right">{{ count }}</td>
-                                    <td class="text-right">
-                                        {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                    <td class="text-center fw-bold">{{ count }}</td>
+                                    <td class="text-center">
+                                        <span class="fw-semibold text-primary">
+                                            {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                        </span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -138,7 +495,10 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center">No status data available</p>
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                            <p>No status data available yet</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -146,59 +506,76 @@
 
         <!-- Top Locations -->
         <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Job Locations</h6>
+            <div class="professional-chart-card slide-up">
+                <div class="professional-chart-header">
+                    <h6><i class="fas fa-map-marker-alt me-2"></i>Geographic Opportunities</h6>
                 </div>
-                <div class="card-body">
-                                        {% if stats.top_locations %}                    <div class="list-group list-group-flush">                        {% for location, count in (stats.top_locations.items() | list)[:10] %}                        <div class="list-group-item d-flex justify-content-between align-items-center">                            <span><i class="fas fa-map-marker-alt text-muted"></i> {{ location }}</span>                            <span class="badge badge-secondary badge-pill">{{ count }}</span>                        </div>                        {% endfor %}                    </div>                    {% else %}
-                    <p class="text-muted text-center">No location data available</p>
+                <div class="professional-chart-body">
+                    {% if stats.top_locations %}
+                        {% for location, count in (stats.top_locations.items() | list)[:10] %}
+                        <div class="professional-list-item">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <i class="fas fa-map-marker-alt me-3 text-danger"></i>
+                                <span class="fw-semibold">{{ location }}</span>
+                            </div>
+                            <div class="professional-badge">{{ count }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-map fa-3x mb-3 opacity-50"></i>
+                            <p>No location data available yet</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Application Rate Card -->
+    <!-- Success Metrics -->
     {% if stats.total_jobs > 0 %}
     <div class="row">
         <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Application Success Metrics</h6>
+            <div class="professional-chart-card slide-up">
+                <div class="professional-chart-header">
+                    <h6><i class="fas fa-trophy me-2"></i>Success Rate Metrics</h6>
                 </div>
-                <div class="card-body">
+                <div class="professional-chart-body">
                     <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="border-right border-gray-200 h-100 py-3">
-                                <div class="h4 font-weight-bold text-primary">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="professional-metrics-card">
+                                <div class="metric-value primary">
                                     {{ "%.1f"|format((stats.by_status.get('applied', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
-                                <div class="text-muted">Application Rate</div>
+                                <div class="metric-label">Application Rate</div>
+                                <small class="text-muted">Jobs applied to</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="border-right border-gray-200 h-100 py-3">
-                                <div class="h4 font-weight-bold text-success">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="professional-metrics-card">
+                                <div class="metric-value success">
                                     {{ "%.1f"|format((stats.by_status.get('interview', 0) / stats.by_status.get('applied', 1) * 100) if stats.by_status.get('applied', 0) > 0 else 0) }}%
                                 </div>
-                                <div class="text-muted">Interview Rate</div>
+                                <div class="metric-label">Interview Rate</div>
+                                <small class="text-muted">From applications</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="border-right border-gray-200 h-100 py-3">
-                                <div class="h4 font-weight-bold text-info">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="professional-metrics-card">
+                                <div class="metric-value info">
                                     {{ "%.1f"|format((stats.by_status.get('interested', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
-                                <div class="text-muted">Interest Rate</div>
+                                <div class="metric-label">Interest Rate</div>
+                                <small class="text-muted">Jobs of interest</small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="h-100 py-3">
-                                <div class="h4 font-weight-bold text-warning">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="professional-metrics-card">
+                                <div class="metric-value warning">
                                     {{ "%.1f"|format((stats.by_status.get('rejected', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
-                                <div class="text-muted">Rejection Rate</div>
+                                <div class="metric-label">Rejection Rate</div>
+                                <small class="text-muted">Learning opportunities</small>
                             </div>
                         </div>
                     </div>
@@ -207,93 +584,99 @@
         </div>
     </div>
     {% endif %}
-</div>
 
-<!-- Chart.js for visualizations -->
+    <!-- Back to Dashboard -->
+    <div class="text-center mt-4 mb-4">
+        <a href="{{ url_for('index') }}" class="btn btn-lg" style="background: var(--primary-gradient); color: white; border-radius: 50px; padding: 1rem 2rem; font-weight: 600; box-shadow: var(--shadow-light); transition: var(--transition-smooth);">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Status Distribution Pie Chart
-const statusCtx = document.getElementById('statusChart').getContext('2d');
+// Professional Chart Configuration
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: {
+                usePointStyle: true,
+                padding: 20,
+                font: {
+                    family: 'Inter, sans-serif',
+                    size: 12,
+                    weight: '600'
+                }
+            }
+        }
+    }
+};
+
+// Status Distribution Chart
 const statusData = {
     labels: [
-        {% for status, count in stats.by_status.items() %}
+        {% for status in stats.by_status.keys() %}
         '{{ status.replace("_", " ").title() }}'{% if not loop.last %},{% endif %}
         {% endfor %}
     ],
     datasets: [{
         data: [
-            {% for status, count in stats.by_status.items() %}
+            {% for count in stats.by_status.values() %}
             {{ count }}{% if not loop.last %},{% endif %}
             {% endfor %}
         ],
         backgroundColor: [
-            '#28a745', // Applied - Green
-            '#6c757d', // New - Gray
-            '#ffc107', // Interested - Yellow
-            '#17a2b8', // Interview - Cyan
-            '#dc3545', // Rejected - Red
-            '#fd7e14', // Not Interested - Orange
-            '#6f42c1'  // Hidden - Purple
+            '#667eea',
+            '#764ba2', 
+            '#f093fb',
+            '#f5576c',
+            '#4facfe',
+            '#00f2fe'
         ],
-        borderWidth: 2,
-        borderColor: '#fff'
+        borderWidth: 0,
+        hoverOffset: 10
     }]
 };
 
-const statusChart = new Chart(statusCtx, {
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
     type: 'doughnut',
     data: statusData,
     options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        ...chartDefaults,
+        cutout: '70%',
         plugins: {
+            ...chartDefaults.plugins,
             legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 20,
-                    usePointStyle: true
-                }
+                ...chartDefaults.plugins.legend,
+                position: 'right'
             }
         }
     }
 });
+
+// Add animation classes on scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.animation = entry.target.classList.contains('fade-in') ? 
+                'fadeIn 0.6s ease-out' : 'slideUp 0.6s ease-out';
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.fade-in, .slide-up').forEach(el => {
+    observer.observe(el);
+});
 </script>
-
-<style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.text-xs {
-    font-size: 0.7rem;
-}
-
-.border-gray-200 {
-    border-color: #e3e6f0 !important;
-}
-
-.text-gray-800 {
-    color: #5a5c69 !important;
-}
-
-.text-gray-300 {
-    color: #dddfeb !important;
-}
-
-#statusChart {
-    height: 300px !important;
-}
-</style>
 {% endblock %} 
