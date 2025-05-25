@@ -1819,6 +1819,22 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Database Management -->
+            <div class="filter-section">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-database me-2 text-info"></i>
+                    <h6 class="mb-0 fw-bold text-dark">Database Management</h6>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="filter-btn" onclick="showDatabaseCleanupModal()">
+                        <i class="fas fa-broom"></i>Cleanup Database
+                    </button>
+                    <button type="button" class="filter-btn text-danger" onclick="bulkDeleteJobs()">
+                        <i class="fas fa-trash-alt"></i>Bulk Delete Jobs
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Main Content Area -->
@@ -2272,6 +2288,143 @@
 </div>
 
 <!-- Database Cleanup Modal -->
+<div class="modal fade" id="databaseCleanupModal" tabindex="-1" aria-labelledby="databaseCleanupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content professional-modal">
+            <div class="modal-header professional-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="professional-modal-icon">
+                        <i class="fas fa-broom"></i>
+                    </div>
+                    <div>
+                        <h4 class="modal-title mb-0" id="databaseCleanupModalLabel">Database Cleanup</h4>
+                        <small class="text-muted">Clean up and organize your job database</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body professional-modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="professional-info-card mb-4">
+                            <div class="info-header">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <h6 class="mb-0">Cleanup Options</h6>
+                            </div>
+                            <div class="info-content">
+                                <p class="text-muted mb-0">Choose the type of cleanup you want to perform. These operations cannot be undone.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Cleanup Type Selection -->
+                        <div class="professional-info-card mb-4">
+                            <div class="info-header">
+                                <i class="fas fa-tasks me-2"></i>
+                                <h6 class="mb-0">Cleanup Type</h6>
+                            </div>
+                            <div class="info-content">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="cleanupType" id="duplicatesCleanup" value="duplicates" checked>
+                                    <label class="form-check-label" for="duplicatesCleanup">
+                                        <strong>Remove Duplicate Jobs</strong>
+                                        <small class="d-block text-muted">Remove jobs with identical titles and companies</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="cleanupType" id="oldJobsCleanup" value="old_jobs">
+                                    <label class="form-check-label" for="oldJobsCleanup">
+                                        <strong>Remove Old Jobs</strong>
+                                        <small class="d-block text-muted">Remove jobs older than specified days</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="cleanupType" id="statusCleanup" value="status">
+                                    <label class="form-check-label" for="statusCleanup">
+                                        <strong>Remove Jobs by Status</strong>
+                                        <small class="d-block text-muted">Remove all jobs with a specific status</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="cleanupType" id="allJobsCleanup" value="all">
+                                    <label class="form-check-label text-danger" for="allJobsCleanup">
+                                        <strong>Delete All Jobs</strong>
+                                        <small class="d-block text-muted">⚠️ Remove ALL jobs from the database</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Old Jobs Options -->
+                        <div id="oldJobsOptions" class="professional-info-card mb-4" style="display: none;">
+                            <div class="info-header">
+                                <i class="fas fa-calendar me-2"></i>
+                                <h6 class="mb-0">Age Threshold</h6>
+                            </div>
+                            <div class="info-content">
+                                <div class="mb-3">
+                                    <label for="daysToKeep" class="form-label">Keep jobs from the last:</label>
+                                    <select class="form-select" id="daysToKeep">
+                                        <option value="7">7 days</option>
+                                        <option value="14">14 days</option>
+                                        <option value="30" selected>30 days</option>
+                                        <option value="60">60 days</option>
+                                        <option value="90">90 days</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Cleanup Options -->
+                        <div id="statusCleanupOptions" class="professional-info-card mb-4" style="display: none;">
+                            <div class="info-header">
+                                <i class="fas fa-filter me-2"></i>
+                                <h6 class="mb-0">Status Filter</h6>
+                            </div>
+                            <div class="info-content">
+                                <div class="mb-3">
+                                    <label for="statusToDelete" class="form-label">Delete all jobs with status:</label>
+                                    <select class="form-select" id="statusToDelete">
+                                        <option value="rejected">Rejected</option>
+                                        <option value="hidden">Hidden</option>
+                                        <option value="not_interested">Not Interested</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Confirmation Section for Delete All -->
+                        <div id="confirmationSection" class="professional-info-card border-danger" style="display: none;">
+                            <div class="info-header text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <h6 class="mb-0 text-danger">Dangerous Operation</h6>
+                            </div>
+                            <div class="info-content">
+                                <div class="alert alert-danger mb-3">
+                                    <strong>Warning!</strong> This will permanently delete ALL jobs from your database. This action cannot be undone.
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmDeleteAll">
+                                    <label class="form-check-label text-danger" for="confirmDeleteAll">
+                                        I understand this will delete everything and cannot be undone
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer professional-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="executeCleanupBtn" onclick="executeCleanup()">
+                    <i class="fas fa-trash me-2"></i>Execute Cleanup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -3157,6 +3310,111 @@ function executeCleanup() {
         // Re-enable the button
         executeBtn.disabled = false;
         executeBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Execute Cleanup';
+    });
+}
+
+// Bulk Delete Jobs Function
+function bulkDeleteJobs() {
+    // Get current filter parameters to determine which jobs to delete
+    const currentStatus = new URLSearchParams(window.location.search).get('status');
+    const currentSearch = new URLSearchParams(window.location.search).get('search');
+    
+    let confirmMessage = 'Are you sure you want to delete ';
+    let deleteEndpoint = '/api/delete_jobs';
+    let requestData = {};
+    
+    // Determine what jobs will be deleted based on current filters
+    if (currentStatus && currentStatus !== 'all') {
+        confirmMessage += `all jobs with status "${currentStatus.replace('_', ' ')}"?`;
+        requestData.status = currentStatus;
+    } else if (currentSearch) {
+        confirmMessage += `all jobs matching "${currentSearch}"?`;
+        requestData.search = currentSearch;
+    } else {
+        confirmMessage += 'all visible jobs?';
+        // Get all job IDs currently displayed on the page
+        const visibleJobIds = Array.from(document.querySelectorAll('.job-card, .professional-job-card'))
+            .map(card => card.dataset.jobId)
+            .filter(id => id);
+        
+        if (visibleJobIds.length === 0) {
+            showEnhancedToast('Info', 'No jobs to delete', 'info');
+            return;
+        }
+        
+        requestData.job_ids = visibleJobIds;
+    }
+    
+    confirmMessage += '\n\nThis action cannot be undone.';
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Show loading state
+    const jobCards = document.querySelectorAll('.job-card, .professional-job-card');
+    jobCards.forEach(card => {
+        card.style.opacity = '0.5';
+        card.style.pointerEvents = 'none';
+    });
+    
+    // Create loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 9999;">
+            <div class="bg-white p-4 rounded shadow text-center">
+                <div class="spinner-border text-danger mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Deleting Jobs...</h5>
+                <p class="mb-0 text-muted">Please wait while we process your request</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+    
+    fetch(deleteEndpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const deletedCount = data.deleted_count || 'multiple';
+            showEnhancedToast('Success', `Successfully deleted ${deletedCount} jobs`, 'success');
+            
+            // Refresh the page to show updated job list
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showEnhancedToast('Error', 'Bulk delete failed: ' + (data.error || 'Unknown error'), 'error');
+            
+            // Restore job cards
+            jobCards.forEach(card => {
+                card.style.opacity = '';
+                card.style.pointerEvents = '';
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Bulk delete error:', error);
+        showEnhancedToast('Error', 'Bulk delete failed: ' + error.message, 'error');
+        
+        // Restore job cards
+        jobCards.forEach(card => {
+            card.style.opacity = '';
+            card.style.pointerEvents = '';
+        });
+    })
+    .finally(() => {
+        // Remove loading overlay
+        if (loadingOverlay.parentNode) {
+            loadingOverlay.parentNode.removeChild(loadingOverlay);
+        }
     });
 }
 
