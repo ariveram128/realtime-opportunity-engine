@@ -533,12 +533,100 @@
     .professional-modal-icon i {
         font-size: 1.5rem;
         color: white;
-    }
-
-    .professional-modal-body {
+    }    .professional-modal-body {
         padding: 2.5rem;
     }
 
+    /* Job Details Modal Specific Styles */
+    .professional-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .professional-icon-wrapper i {
+        font-size: 1.2rem;
+    }
+
+    .job-description-content {
+        max-height: 200px;
+        overflow-y: auto;
+        line-height: 1.6;
+        color: #5a6c7d;
+        font-size: 0.95rem;
+        padding: 0.5rem 0;
+    }
+
+    .job-description-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .job-description-content::-webkit-scrollbar-track {
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 2px;
+    }
+
+    .job-description-content::-webkit-scrollbar-thumb {
+        background: rgba(102, 126, 234, 0.3);
+        border-radius: 2px;
+    }
+
+    .job-description-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(102, 126, 234, 0.5);
+    }
+
+    #jobDetailModal .professional-info-card {
+        margin: 0;
+        padding: 1.5rem;
+        transition: var(--transition-smooth);
+    }
+
+    #jobDetailModal .professional-info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-light);
+    }
+    
+    /* Enhanced Modal Animations */
+    .modal.fade .modal-dialog {
+        transition: transform 0.4s ease-out;
+        transform: translate(0, -50px);
+    }
+
+    .modal.show .modal-dialog {
+        transform: none;
+    }
+    
+    /* Professional Modal Content Spacing */
+    #jobDetailModal .modal-body {
+        padding: 2rem;
+    }
+    
+    #jobDetailModal .professional-info-card h6 {
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.75rem;
+    }
+    
+    #jobDetailModal .professional-info-card h5 {
+        color: #2c3e50;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+    
+    #jobDetailModal .professional-info-card p {
+        color: #495057;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    /* Professional Search Form */
     .professional-search-form .form-control {
         background: rgba(255, 255, 255, 0.9);
         border: 2px solid rgba(102, 126, 234, 0.2);
@@ -962,6 +1050,45 @@
         background-clip: text;
         margin-bottom: 1rem;
     }
+    
+    /* Toast Container Styling */
+    .toast-container {
+        position: fixed !important;
+        top: 1.5rem !important;
+        right: 1.5rem !important;
+        z-index: 9999 !important;
+        max-width: 400px;
+    }
+    
+    .professional-toast {
+        border: none !important;
+        border-radius: var(--border-radius) !important;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-medium) !important;
+        margin-bottom: 1rem;
+        animation: slideInRight 0.4s ease-out;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .professional-toast .btn-close {
+        background-color: transparent;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+    }
+    
+    .professional-toast .btn-close:hover {
+        opacity: 1;
+    }
 
     /* Professional Filter Section */
     .professional-filter-section {
@@ -1055,6 +1182,38 @@
         border-color: transparent;
         color: white;
         box-shadow: var(--shadow-light);
+    }
+    
+    /* Modal Backdrop Fix */
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    
+    .modal {
+        z-index: 1050 !important;
+    }
+    
+    /* Ensure no lingering backdrop styles */
+    body:not(.modal-open) .modal-backdrop {
+        display: none !important;
+    }
+    
+    /* Emergency backdrop cleanup on click */
+    .modal-backdrop.orphaned {
+        display: none !important;
+    }
+    
+    /* Failsafe: Ensure body can always scroll when no modal is open */
+    body:not(.modal-open) {
+        overflow: auto !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+    
+    /* Prevent permanent scroll lock */
+    body.scroll-fix {
+        overflow: auto !important;
+        overflow-y: auto !important;
     }
 </style>
 {% endblock %}
@@ -1241,172 +1400,177 @@
         <!-- Job Listings -->
         {% if jobs %}
             <div class="job-listings-container" id="job-listings">
-                {% for job in jobs %}
-                <div class="professional-job-card status-{{ job.status.replace(' ', '_').lower() if job.status else 'new' }}" data-job-id="{{ job.id }}">
-                    <div class="professional-job-card-header">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h4 class="professional-job-title">
-                                    <a href="{{ job.url }}" target="_blank" class="text-decoration-none">
-                                        {{ job.title }}
-                                        <i class="fas fa-external-link-alt ms-2 text-muted" style="font-size: 0.8em;"></i>
-                                    </a>
-                                </h4>
-                                <div class="professional-company-info">
-                                    <span class="professional-company-name">{{ job.company }}</span>
-                                    {% if job.location %}
-                                        <span class="professional-location">
-                                            <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
-                                        </span>
+                <div class="row" id="job-listings-container">
+                    {% for job in jobs %}
+                    <div class="col-md-12 job-card-wrapper">
+                        <div class="professional-job-card status-{{ job.status|lower|replace(' ', '_') if job.status else 'new' }}" 
+                             data-job-id="{{ job.job_id }}"
+                             data-job-title="{{ job.title | replace('"', '&quot;') }}"
+                             data-job-company="{{ job.company | replace('"', '&quot;') }}"
+                             data-job-location="{{ job.location | replace('"', '&quot;') }}"
+                             data-job-url="{{ job.url }}"
+                             data-description="{{ job.description | replace('"', '&quot;') }}">
+                            
+                            <div class="professional-job-card-header d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h3 class="professional-job-title mb-1">
+                                        <a href="{{ job.url }}" target="_blank" class="text-decoration-none">
+                                            {{ job.title }}
+                                            <i class="fas fa-external-link-alt ms-2 text-muted" style="font-size: 0.8em;"></i>
+                                        </a>
+                                    </h3>
+                                    <div class="professional-company-info">
+                                        <span class="professional-company-name">{{ job.company }}</span>
+                                        {% if job.location %}
+                                            <span class="professional-location">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="professional-job-meta">
+                                    {% if job.salary %}
+                                        <span class="professional-salary-badge">{{ job.salary }}</span>
                                     {% endif %}
+                                    <small class="text-muted d-block text-end">
+                                        {% if job.posted_date %}
+                                            {{ job.posted_date }}
+                                        {% elif job.extracted_at %}
+                                            Added {{ job.extracted_at.strftime('%Y-%m-%d') if job.extracted_at.strftime else job.extracted_at[:10] }}
+                                        {% else %}
+                                            Just posted
+                                        {% endif %}
+                                    </small>
                                 </div>
                             </div>
-                            <div class="professional-job-meta">
-                                {% if job.salary %}
-                                    <span class="professional-salary-badge">{{ job.salary }}</span>
+                            
+                            <div class="professional-job-card-body">
+                                {% if job.description %}
+                                    <p class="professional-job-description">
+                                        {{ job.description[:200] }}{% if job.description|length > 200 %}...{% endif %}
+                                    </p>
                                 {% endif %}
-                                <small class="text-muted d-block text-end">
-                                    {% if job.posted_date %}
-                                        {{ job.posted_date }}
-                                    {% elif job.extracted_at %}
-                                        Added {{ job.extracted_at.strftime('%Y-%m-%d') if job.extracted_at.strftime else job.extracted_at[:10] }}
-                                    {% else %}
-                                        Just posted
-                                    {% endif %}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="professional-job-card-body">
-                        {% if job.description %}
-                            <p class="professional-job-description">
-                                {{ job.description[:200] }}{% if job.description|length > 200 %}...{% endif %}
-                            </p>
-                        {% endif %}
-                        
-                        {% if job.skills %}
-                            <div class="professional-skills-tags">
-                                {% for skill in job.skills[:5] %}
-                                    <span class="professional-skill-tag">{{ skill }}</span>
-                                {% endfor %}
-                                {% if job.skills|length > 5 %}
-                                    <span class="professional-skill-tag-more">+{{ job.skills|length - 5 }} more</span>
+                                
+                                {% if job.skills %}
+                                    <div class="professional-skills-tags">
+                                        {% for skill in job.skills[:5] %}
+                                            <span class="professional-skill-tag">{{ skill }}</span>
+                                        {% endfor %}
+                                        {% if job.skills|length > 5 %}
+                                            <span class="professional-skill-tag-more">+{{ job.skills|length - 5 }} more</span>
+                                        {% endif %}
+                                    </div>
                                 {% endif %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="professional-job-card-footer">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="professional-status-buttons">
-                                <button type="button" class="btn-professional-status btn-professional-status-interested {{ 'active' if job.status == 'interested' else '' }}"
-                                        onclick="updateJobStatus('{{ job.id }}', 'interested', this)"
-                                        data-bs-toggle="tooltip" title="Mark as Interested">
-                                    <i class="fas fa-heart"></i>
-                                </button>
-                                <button type="button" class="btn-professional-status btn-professional-status-applied {{ 'active' if job.status == 'applied' else '' }}"
-                                        onclick="updateJobStatus('{{ job.id }}', 'applied', this)"
-                                        data-bs-toggle="tooltip" title="Mark as Applied">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                                <button type="button" class="btn-professional-status btn-professional-status-interview {{ 'active' if job.status == 'interview' else '' }}"
-                                        onclick="updateJobStatus('{{ job.id }}', 'interview', this)"
-                                        data-bs-toggle="tooltip" title="Mark as Interview">
-                                    <i class="fas fa-handshake"></i>
-                                </button>
-                                <button type="button" class="btn-professional-status btn-professional-status-rejected {{ 'active' if job.status == 'rejected' else '' }}"
-                                        onclick="updateJobStatus('{{ job.id }}', 'rejected', this)"
-                                        data-bs-toggle="tooltip" title="Mark as Rejected">
-                                    <i class="fas fa-times"></i>
-                                </button>
                             </div>
                             
-                            <div class="professional-job-actions">
-                                <a href="{{ job.url }}" target="_blank" class="btn btn-professional-primary btn-sm">
-                                    <i class="fas fa-external-link-alt me-1"></i>View Job
-                                </a>
-                                <button type="button" class="btn btn-outline-danger btn-sm"
-                                        onclick="updateJobStatus('{{ job.id }}', 'hidden', this)"
-                                        data-bs-toggle="tooltip" title="Hide this job">
-                                    <i class="fas fa-eye-slash"></i>
-                                </button>
+                            <div class="professional-job-card-footer d-flex justify-content-between align-items-center">
+                                <div class="professional-status-buttons">
+                                    <!-- Status update buttons -->
+                                    <button class="btn btn-professional-status btn-status-new {% if job.status == 'New' %}active{% endif %}" 
+                                            data-job-id="{{ job.job_id }}" data-status="new" title="Mark as New">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                    <button class="btn btn-professional-status btn-status-interested {% if job.status == 'Interested' %}active{% endif %}" 
+                                            data-job-id="{{ job.job_id }}" data-status="interested" title="Mark as Interested">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                    <button class="btn btn-professional-status btn-status-applied {% if job.status == 'Applied' %}active{% endif %}" 
+                                            data-job-id="{{ job.job_id }}" data-status="applied" title="Mark as Applied">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                    <button class="btn btn-professional-status btn-status-interview {% if job.status == 'Interview' %}active{% endif %}" 
+                                            data-job-id="{{ job.job_id }}" data-status="interview" title="Mark as Interview">
+                                        <i class="fas fa-handshake"></i>
+                                    </button>
+                                    <button class="btn btn-professional-status btn-status-rejected {% if job.status == 'Rejected' %}active{% endif %}" 
+                                            data-job-id="{{ job.job_id }}" data-status="rejected" title="Mark as Rejected">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="professional-job-actions">
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-view-details" title="View Details">
+                                        <i class="fas fa-eye me-1"></i> Details
+                                    </button>
+                                    <a href="{{ job.url }}" class="btn btn-primary btn-sm" target="_blank" title="Apply or View Original Post">
+                                        <i class="fas fa-external-link-alt me-1"></i> Apply
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-            
-            <!-- Pagination -->
-            {% if total_pages and total_pages > 1 %}
-                <nav class="professional-pagination mt-5">
-                    <ul class="pagination justify-content-center">
-                        {% if page > 1 %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('index', page=page-1, search=search_query, status=current_status) }}">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            </li>
-                        {% endif %}
-                        
-                        {% for page_num in range(1, total_pages + 1) %}
-                            {% if page_num == page %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_num }}</span>
-                                </li>
-                            {% elif page_num <= 2 or page_num >= total_pages - 1 or (page_num >= page - 2 and page_num <= page + 2) %}
+                
+                <!-- Pagination -->
+                {% if total_pages and total_pages > 1 %}
+                    <nav class="professional-pagination mt-5">
+                        <ul class="pagination justify-content-center">
+                            {% if page > 1 %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('index', page=page_num, search=search_query, status=current_status) }}">{{ page_num }}</a>
-                                </li>
-                            {% elif page_num == 3 or page_num == total_pages - 2 %}
-                                <li class="page-item disabled">
-                                    <span class="page-link">...</span>
+                                    <a class="page-link" href="{{ url_for('index', page=page-1, search=search_query, status=current_status) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
                                 </li>
                             {% endif %}
-                        {% endfor %}
-                        
-                        {% if page < total_pages %}
-                            <li class="page-item">
-                                <a class="page-link" href="{{ url_for('index', page=page+1, search=search_query, status=current_status) }}">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
+                            
+                            {% for page_num in range(1, total_pages + 1) %}
+                                {% if page_num == page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% elif page_num <= 2 or page_num >= total_pages - 1 or (page_num >= page - 2 and page_num <= page + 2) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('index', page=page_num, search=search_query, status=current_status) }}">{{ page_num }}</a>
+                                    </li>
+                                {% elif page_num == 3 or page_num == total_pages - 2 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('index', page=page+1, search=search_query, status=current_status) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <!-- No Jobs Found State -->
+                <div class="professional-empty-state text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search fs-1 text-primary mb-3"></i>
+                        <h3 class="fw-bold text-dark">No Opportunities Found</h3>
+                        {% if search_query %}
+                            <p class="text-muted">No jobs match your search for "{{ search_query }}".</p>
+                            <a href="{{ url_for('index', status=current_status) }}" class="btn btn-outline-secondary mt-2">
+                                <i class="fas fa-times me-1"></i>Clear Search
+                            </a>
+                        {% elif current_status and current_status != 'all' %}
+                            <p class="text-muted">No jobs with status "{{ current_status }}".</p>
+                            <a href="{{ url_for('index', status='all') }}" class="btn btn-outline-secondary mt-2">
+                                <i class="fas fa-list me-1"></i>Show All Jobs
+                            </a>
+                        {% else %}
+                            <p class="text-muted">No jobs in database yet. Use the preview MCP Search to see how the feature will work.</p>
                         {% endif %}
-                    </ul>
-                </nav>
+                    </div>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="button" class="btn btn-professional-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
+                            <i class="fas fa-globe me-2"></i>Discover New Jobs
+                        </button>
+                        <a href="{{ url_for('statistics') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-chart-line me-2"></i>View Analytics
+                        </a>
+                    </div>
+                </div>
             {% endif %}
-            
-        {% else %}
-            <!-- No Jobs Found State -->
-            <div class="professional-empty-state text-center py-5">
-                <div class="mb-4">
-                    <i class="fas fa-search fs-1 text-primary mb-3"></i>
-                    <h3 class="fw-bold text-dark">No Opportunities Found</h3>
-                    {% if search_query %}
-                        <p class="text-muted">No jobs match your search for "{{ search_query }}".</p>
-                        <a href="{{ url_for('index', status=current_status) }}" class="btn btn-outline-secondary mt-2">
-                            <i class="fas fa-times me-1"></i>Clear Search
-                        </a>
-                    {% elif current_status and current_status != 'all' %}
-                        <p class="text-muted">No jobs with status "{{ current_status }}".</p>
-                        <a href="{{ url_for('index', status='all') }}" class="btn btn-outline-secondary mt-2">
-                            <i class="fas fa-list me-1"></i>Show All Jobs
-                        </a>
-                    {% else %}
-                        <p class="text-muted">No jobs in database yet. Use the preview MCP Search to see how the feature will work.</p>
-                    {% endif %}
-                </div>
-                <div class="d-flex justify-content-center gap-3">
-                    <button type="button" class="btn btn-professional-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
-                        <i class="fas fa-globe me-2"></i>Discover New Jobs
-                    </button>
-                    <a href="{{ url_for('statistics') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-chart-line me-2"></i>View Analytics
-                    </a>
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 
@@ -2751,8 +2915,440 @@ $(document).ready(function() {
     $('#realtimeSearchModal').on('hidden.bs.modal', function() {
         if (!discoverySearchActive) {
             resetDiscoverySearch();
+        }    });
+    
+    // Add event handler for View Details buttons
+    $(document).on('click', '.btn-view-details', function(e) {
+        e.preventDefault();
+        const jobCard = $(this).closest('.professional-job-card, .job-card');
+        showJobDetails(jobCard);
+    });
+    
+    // Add event handlers for status buttons
+    $(document).on('click', '.btn-professional-status', function(e) {
+        e.preventDefault();
+        const jobId = $(this).data('job-id');
+        const status = $(this).data('status');
+        if (jobId && status) {
+            updateJobStatus(jobId, status, this);
+        }
+    });
+    
+    // Global modal cleanup function - call this if backdrop issues persist
+    window.cleanupModals = function() {
+        // Remove any lingering backdrops
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+        $('body').css('padding-right', '');
+        
+        // Dispose of any modal instances
+        $('.modal').each(function() {
+            const modalInstance = bootstrap.Modal.getInstance(this);
+            if (modalInstance) {
+                modalInstance.dispose();
+            }
+        });
+        
+        // Force reset body overflow to enable scrolling
+        $('body').css('overflow', '');
+        $('body').css('overflow-x', '');
+        $('body').css('overflow-y', '');
+        
+        // Reset any other modal-related styles
+        $('html').css('padding-right', '');
+        $('html').removeClass('modal-open');
+    };
+    
+    // Add global escape key handler for emergency modal cleanup
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' && $('.modal-backdrop').length > 0) {
+            // If there's a backdrop but no visible modal, clean up
+            if ($('.modal.show').length === 0) {
+                window.cleanupModals();
+            }
+        }
+    });
+    
+    // Add click handler for orphaned backdrops
+    $(document).on('click', '.modal-backdrop', function(e) {
+        // Check if this backdrop belongs to a visible modal
+        if ($('.modal.show').length === 0) {
+            // This is an orphaned backdrop, clean it up
+            e.preventDefault();
+            e.stopPropagation();
+            window.cleanupModals();
+        }
+    });
+    
+    // Clean up any existing backdrops on page load
+    window.cleanupModals();
+    
+    // Emergency scroll fix function
+    window.fixScrolling = function() {
+        console.log('Emergency scroll fix activated');
+        
+        // Force remove all modal-related classes and styles
+        $('body, html').removeClass('modal-open');
+        $('body, html').css({
+            'overflow': '',
+            'overflow-x': '',
+            'overflow-y': '',
+            'padding-right': ''
+        });
+        
+        // Add emergency scroll class
+        $('body').addClass('scroll-fix');
+        
+        // Force browser to recalculate layout
+        $(window).trigger('resize');
+        
+        // Remove emergency class after a moment
+        setTimeout(() => {
+            $('body').removeClass('scroll-fix');
+        }, 100);
+        
+        console.log('Scroll fix applied - you should be able to scroll now');
+    };
+    
+    // Add double-escape shortcut for emergency scroll fix
+    let escapeCount = 0;
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            escapeCount++;
+            if (escapeCount >= 2) {
+                // Double escape pressed - activate emergency scroll fix
+                window.fixScrolling();
+                escapeCount = 0;
+            }
+            setTimeout(() => {
+                escapeCount = 0; // Reset counter after 1 second
+            }, 1000);
         }
     });
 });
+
+// Function to show job details modal
+function showJobDetails(jobCard) {
+    // Extract job data from the card's data attributes and DOM elements
+    const jobData = {
+        id: jobCard.data('job-id'),
+        title: jobCard.data('job-title'),
+        company: jobCard.data('job-company'), 
+        location: jobCard.data('job-location'),
+        url: jobCard.data('job-url'),
+        description: jobCard.data('description')
+    };
+    
+    // Fallback to DOM extraction if data attributes are missing
+    if (!jobData.title) {
+        const titleElement = jobCard.find('.professional-job-title a, .job-title a');
+        jobData.title = titleElement.length ? titleElement.text().trim() : 'Job Title';
+        if (!jobData.url && titleElement.length) {
+            jobData.url = titleElement.attr('href');
+        }
+    }
+    
+    if (!jobData.company) {
+        const companyElement = jobCard.find('.professional-company-name, .company-name');
+        jobData.company = companyElement.length ? companyElement.text().trim() : 'Company Name';
+    }
+    
+    if (!jobData.location) {
+        const locationElement = jobCard.find('.professional-location');
+        jobData.location = locationElement.length ? 
+            locationElement.text().replace(/^.*?📍\s*/, '').trim() : 'Location';
+    }
+    
+    if (!jobData.description) {
+        const descElement = jobCard.find('.professional-job-description, .job-description');
+        jobData.description = descElement.length ? descElement.text().trim() : '';
+    }
+    
+    // Decode HTML entities
+    const decodeHtml = (html) => {
+        const txt = document.createElement('textarea');
+        txt.innerHTML = html;
+        return txt.value;
+    };
+    
+    // Clean and prepare data
+    const cleanTitle = decodeHtml(jobData.title || 'Job Title');
+    const cleanCompany = decodeHtml(jobData.company || 'Company Name');
+    const cleanLocation = decodeHtml(jobData.location || 'Location');
+    const cleanDescription = decodeHtml(jobData.description || 'No description available');
+    
+    // Populate the modal with job data
+    $('#modalJobTitle').text(cleanTitle);
+    $('#modalJobCompany').text(cleanCompany);
+    $('#modalJobLocation').text(cleanLocation);
+    $('#modalJobDescription').html(formatJobDescription(cleanDescription));
+    
+    // Set the job link
+    if (jobData.url && jobData.url !== '#' && jobData.url.trim() !== '') {
+        $('#modalJobLink').attr('href', jobData.url).show();
+    } else {
+        $('#modalJobLink').hide();
+    }
+    
+    // Clean up any existing modal instances and event listeners
+    const modalElement = document.getElementById('jobDetailModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    // Remove any existing event listeners
+    $('#jobDetailModal').off('shown.bs.modal hidden.bs.modal');
+    
+    // Create new modal instance
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,  // Changed from 'static' to true
+        keyboard: true,
+        focus: true
+    });
+    
+    // Store original body styles before modal opens
+    const originalBodyOverflow = $('body').css('overflow');
+    const originalBodyOverflowX = $('body').css('overflow-x');
+    const originalBodyOverflowY = $('body').css('overflow-y');
+    
+    // Add event listeners for this modal instance
+    $('#jobDetailModal').one('shown.bs.modal', function() {
+        // Add entrance animation (using 'one' to ensure it only runs once)
+        $(this).find('.professional-info-card').each(function(index) {
+            $(this).css({
+                'opacity': '0',
+                'transform': 'translateY(20px)'
+            }).delay(index * 100).animate({
+                'opacity': '1'
+            }, 300, function() {
+                $(this).css('transform', 'translateY(0)');
+            });
+        });
+    });
+    
+    // Clean up when modal is hidden
+    $('#jobDetailModal').one('hidden.bs.modal', function() {
+        // Reset any animations
+        $(this).find('.professional-info-card').css({
+            'opacity': '',
+            'transform': ''
+        });
+        
+        // Dispose of the modal instance
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.dispose();
+        }
+        
+        // Force remove any remaining backdrops
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+        $('body').css('padding-right', '');
+        
+        // CRITICAL: Restore original body overflow styles
+        $('body').css('overflow', originalBodyOverflow || '');
+        $('body').css('overflow-x', originalBodyOverflowX || '');
+        $('body').css('overflow-y', originalBodyOverflowY || '');
+        
+        // Reset html styles too
+        $('html').css('padding-right', '');
+        $('html').removeClass('modal-open');
+        
+        // Force a small delay to ensure styles are applied
+        setTimeout(() => {
+            $('body').css('overflow', originalBodyOverflow || '');
+            $(window).trigger('resize'); // Trigger resize to recalculate layout
+        }, 10);
+    });
+    
+    // Show the modal
+    modal.show();
+}
+
+// Function to format job description with better readability
+function formatJobDescription(description) {
+    if (!description || description === 'No description available' || description.trim() === '') {
+        return '<p class="text-muted fst-italic">No description available for this position.</p>';
+    }
+    
+    // Clean and format the description
+    let formatted = description
+        .replace(/\n\n+/g, '</p><p>')  // Double line breaks become new paragraphs
+        .replace(/\n/g, '<br>')        // Single line breaks become <br>
+        .replace(/•\s*/g, '<li>')      // Convert bullet points
+        .replace(/\*\s*/g, '<li>')     // Convert asterisk bullets
+        .replace(/(\d+\.\s*)/g, '<li>'); // Convert numbered lists
+    
+    // Wrap in paragraph tags if not already
+    if (!formatted.startsWith('<p>') && !formatted.includes('<li>')) {
+        formatted = '<p>' + formatted + '</p>';
+    }
+    
+    // If we have list items, wrap them in ul tags
+    if (formatted.includes('<li>')) {
+        formatted = formatted.replace(/(<li>[^<]*)/g, '<ul class="mb-2">$1</li></ul>');
+        formatted = formatted.replace(/<\/ul><ul class="mb-2">/g, ''); // Merge consecutive lists
+    }
+    
+    return formatted;
+}
+
+// Function to update job status
+function updateJobStatus(jobId, newStatus, button) {
+    const $button = $(button);
+    const originalHtml = $button.html();
+    
+    // Add loading state
+    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+    
+    fetch('/update_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            job_id: jobId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the UI
+            const jobCard = $button.closest('.professional-job-card, .job-card');
+            
+            // Remove active state from all status buttons in this card
+            jobCard.find('.btn-professional-status').removeClass('active');
+            
+            // Add active state to clicked button (unless hidden)
+            if (newStatus !== 'hidden') {
+                $button.addClass('active');
+            }
+            
+            // Update card status class
+            jobCard.removeClass(function(index, className) {
+                return (className.match(/(^|\s)status-\S+/g) || []).join(' ');
+            });
+            jobCard.addClass('status-' + newStatus.replace(' ', '_').toLowerCase());
+            
+            // Show success notification
+            showEnhancedToast('Success', `Job status updated to ${newStatus}`, 'success');
+            
+            // If hidden, fade out the job card
+            if (newStatus === 'hidden') {
+                setTimeout(() => {
+                    jobCard.fadeOut(600, function() {
+                        $(this).remove();
+                    });
+                }, 500);
+            }
+        } else {
+            showEnhancedToast('Error', data.error || 'Failed to update job status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Status update error:', error);
+        showEnhancedToast('Error', 'Failed to update job status', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        $button.prop('disabled', false).html(originalHtml);
+    });
+}
 </script>
+
+<!-- Job Details Modal -->
+<div class="modal fade" id="jobDetailModal" tabindex="-1" aria-labelledby="jobDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content professional-modal">
+            <div class="modal-header professional-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="professional-modal-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div>
+                        <h4 class="modal-title mb-0" id="jobDetailModalLabel">Job Details</h4>
+                        <small class="text-muted">Complete opportunity information</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body professional-modal-body">
+                <div class="row g-4">
+                    <!-- Job Title -->
+                    <div class="col-12">
+                        <div class="professional-info-card">
+                            <div class="d-flex align-items-start">
+                                <div class="professional-icon-wrapper bg-primary">
+                                    <i class="fas fa-briefcase text-white"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 text-muted">Position</h6>
+                                    <h5 class="mb-0" id="modalJobTitle">Job Title</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Company -->
+                    <div class="col-md-6">
+                        <div class="professional-info-card">
+                            <div class="d-flex align-items-start">
+                                <div class="professional-icon-wrapper bg-success">
+                                    <i class="fas fa-building text-white"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 text-muted">Company</h6>
+                                    <p class="mb-0 fw-semibold" id="modalJobCompany">Company Name</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="col-md-6">
+                        <div class="professional-info-card">
+                            <div class="d-flex align-items-start">
+                                <div class="professional-icon-wrapper bg-info">
+                                    <i class="fas fa-map-marker-alt text-white"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 text-muted">Location</h6>
+                                    <p class="mb-0 fw-semibold" id="modalJobLocation">Location</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="col-12">
+                        <div class="professional-info-card">
+                            <div class="d-flex align-items-start">
+                                <div class="professional-icon-wrapper bg-warning">
+                                    <i class="fas fa-file-alt text-white"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-2 text-muted">Description</h6>
+                                    <div class="job-description-content" id="modalJobDescription">
+                                        Job description will appear here...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer professional-modal-footer">
+                <a href="#" id="modalJobLink" class="btn btn-professional-primary" target="_blank">
+                    <i class="fas fa-external-link-alt me-2"></i>View Original Job Posting
+                </a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

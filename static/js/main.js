@@ -316,14 +316,20 @@ class JobCardManager {
 
     setupStatusButtons() {
         document.addEventListener('click', async (e) => {
-            if (e.target.matches('.btn-status')) {
-                await this.handleStatusChange(e);
+            const statusButton = e.target.closest('.btn-status');
+            if (statusButton) {
+                await this.handleStatusChange(statusButton);
+                return; // Prevent further actions if it was a status button
+            }
+
+            const viewDetailsButton = e.target.closest('.btn-view-details');
+            if (viewDetailsButton) {
+                this.showJobDetailsModal(viewDetailsButton);
             }
         });
     }
 
-    async handleStatusChange(event) {
-        const button = event.target;
+    async handleStatusChange(button) {
         const jobId = button.dataset.jobId;
         const newStatus = button.dataset.status;
         
@@ -455,6 +461,26 @@ class JobCardManager {
         element.appendChild(ripple);
         
         setTimeout(() => ripple.remove(), 600);
+    }
+
+    showJobDetailsModal(button) {
+        const jobCard = button.closest('.professional-job-card');
+        const title = jobCard.dataset.jobTitle;
+        const company = jobCard.dataset.jobCompany;
+        const location = jobCard.dataset.jobLocation;
+        const description = jobCard.dataset.description;
+        const url = jobCard.dataset.jobUrl;
+
+        document.getElementById('modalJobTitle').textContent = title;
+        document.getElementById('modalJobCompany').textContent = company;
+        document.getElementById('modalJobLocation').textContent = location;
+        // Sanitize and set description if needed, for now, direct text
+        document.getElementById('modalJobDescription').textContent = description; 
+        document.getElementById('modalJobLink').href = url;
+
+        const modalElement = document.getElementById('jobDetailModal');
+        const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+        modal.show();
     }
 
     observeJobCards() {
@@ -1039,3 +1065,65 @@ const additionalStyles = `
 `;
 
 document.head.insertAdjacentHTML('beforeend', additionalStyles);
+
+// ========== Document Ready & Initialization ==========
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize core components
+    const searchManager = new SearchManager();
+    const jobCardManager = new JobCardManager();
+    const mcpSearchManager = new MCPSearchManager();
+    const statsDashboard = new StatsDashboard();
+    const navigationManager = new NavigationManager();
+
+    // Initialize tooltips (Bootstrap 5)
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Initialize professional animations
+    if (typeof window.initializeProfessionalAnimations === 'function') {
+        window.initializeProfessionalAnimations();
+    }
+
+    // Enhanced scroll effects for navbar
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        window.addEventListener('scroll', Utils.throttle(() => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        }, 100));
+    }
+
+    // MCP Search Form Submission
+    const mcpSearchForm = document.getElementById('mcpSearchForm');
+    if (mcpSearchForm) {
+        mcpSearchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            mcpSearchManager.executeMCPSearch();
+        });
+    }
+
+    // MCP Cancel Button
+    const mcpCancelBtn = document.getElementById('cancelMCPSearch');
+    if (mcpCancelBtn) {
+        mcpCancelBtn.addEventListener('click', () => {
+            mcpSearchManager.cancelMCPSearch();
+        });
+    }
+
+    // Global event listener for view details buttons (if added dynamically)
+    // This is a fallback, preferred method is in JobCardManager's setupStatusButtons
+    // document.body.addEventListener('click', function(event) {
+    //     const viewDetailsButton = event.target.closest('.btn-view-details');
+    //     if (viewDetailsButton) {
+    //         jobCardManager.showJobDetailsModal(viewDetailsButton);
+    //     }
+    // });
+
+    console.log('Professional Job Platform Initialized');
+});
