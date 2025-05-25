@@ -1167,7 +1167,7 @@
                         <i class="fas fa-chart-line me-1"></i>Analytics
                     </a>
                     <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
-                        <i class="fas fa-search-plus me-1"></i>Smart Search
+                        <i class="fas fa-globe me-1"></i>Discover Jobs
                     </button>
                 </div>
             </div>
@@ -1182,44 +1182,41 @@
                     <h3 class="fw-bold text-dark mb-1">Job Opportunities</h3>
                     <p class="text-muted mb-0">{{ total_jobs or 0 }} opportunities found</p>
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-professional-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
-                        <i class="fas fa-brain me-2"></i>
-                        Preview MCP Search
+                {% if jobs %}
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort me-2"></i>Sort
                     </button>
-                    {% if jobs %}
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-sort me-2"></i>Sort
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="sortJobs('date')"><i class="fas fa-calendar me-2"></i>Latest</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="sortJobs('company')"><i class="fas fa-building me-2"></i>Company</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="sortJobs('title')"><i class="fas fa-briefcase me-2"></i>Title</a></li>
-                        </ul>
-                    </div>
-                    {% endif %}
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="sortJobs('date')"><i class="fas fa-calendar me-2"></i>Latest</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortJobs('company')"><i class="fas fa-building me-2"></i>Company</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortJobs('title')"><i class="fas fa-briefcase me-2"></i>Title</a></li>
+                    </ul>
                 </div>
+                {% endif %}
             </div>
             
             <!-- Search Form -->
             <form method="GET" action="{{ url_for('index') }}" class="mb-3">
                 <div class="row g-3">
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="fas fa-search"></i>
                             </span>
                             <input type="text" class="form-control" name="search" 
                                    value="{{ search_query or '' }}" 
-                                   placeholder="Search jobs by title, company, or description...">
+                                   placeholder="Search existing jobs by title, company, or description...">
                             <input type="hidden" name="status" value="{{ current_status }}">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="d-grid gap-2 d-md-flex">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search me-1"></i>Search
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-1"></i>Search Database
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="startRealJobDiscovery()" id="realJobDiscoveryBtn">
+                                <i class="fas fa-globe me-1"></i>Discover New Jobs
                             </button>
                             {% if search_query %}
                             <a href="{{ url_for('index', status=current_status) }}" class="btn btn-outline-secondary">
@@ -1230,6 +1227,15 @@
                     </div>
                 </div>
             </form>
+            
+            <!-- Real-time Job Discovery Help Text -->
+            <div class="mt-2">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Search Database:</strong> Search existing jobs in database instantly. 
+                    <strong>Discover New Jobs:</strong> Find fresh opportunities from LinkedIn & Indeed (takes 1-2 minutes).
+                </small>
+            </div>
         </div>
         
         <!-- Job Listings -->
@@ -1393,7 +1399,7 @@
                 </div>
                 <div class="d-flex justify-content-center gap-3">
                     <button type="button" class="btn btn-professional-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
-                        <i class="fas fa-brain me-2"></i>Preview MCP Search
+                        <i class="fas fa-globe me-2"></i>Discover New Jobs
                     </button>
                     <a href="{{ url_for('statistics') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-chart-line me-2"></i>View Analytics
@@ -1404,78 +1410,206 @@
     </div>
 </div>
 
-<!-- Enhanced MCP Smart Search Modal -->
+<!-- Real-time Job Discovery Modal -->
 <div class="modal fade" id="realtimeSearchModal" tabindex="-1" aria-labelledby="realtimeSearchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content professional-modal">
             <div class="modal-header professional-modal-header">
                 <div class="d-flex align-items-center">
                     <div class="professional-modal-icon">
-                        <i class="fas fa-brain"></i>
+                        <i class="fas fa-globe"></i>
                     </div>
                     <div>
-                        <h4 class="modal-title mb-0" id="realtimeSearchModalLabel">MCP Smart Search Preview</h4>
-                        <small class="text-muted">Feature Demo - AI-Powered Opportunity Discovery</small>
+                        <h4 class="modal-title mb-0" id="realtimeSearchModalLabel">Real-time Job Discovery</h4>
+                        <small class="text-muted">Find fresh opportunities from LinkedIn & Indeed</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body professional-modal-body">
-                <div class="text-center py-4">
-                    <div class="professional-empty-state">
-                        <i class="fas fa-robot fa-4x text-primary mb-4"></i>
-                        <h3 class="fw-bold text-dark">MCP Search Feature Preview</h3>
-                        <p class="text-muted mb-4">
-                            This advanced search feature will integrate with the Model Context Protocol 
-                            to provide intelligent job discovery using AI-powered analysis.
-                        </p>
-                        
-                        <div class="row g-3 mt-4">
-                            <div class="col-md-3">
-                                <div class="professional-info-card text-center p-3">
-                                    <i class="fas fa-compass fa-2x text-primary mb-2"></i>
-                                    <h6>Discover</h6>
-                                    <small class="text-muted">AI expands your search</small>
+                <div id="discoverySearchContent">
+                    <!-- Search Configuration -->
+                    <div id="discoveryConfig">
+                        <div class="professional-search-form">
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    <label for="discoverySearchTerm" class="form-label fw-bold">
+                                        <i class="fas fa-search me-2 text-primary"></i>Search Query
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg" id="discoverySearchTerm" 
+                                           placeholder="e.g., software engineering internship, marketing intern, data science">
+                                    <div class="form-text">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Enter keywords to search for internships and entry-level positions.
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="discoveryMaxResults" class="form-label fw-bold">
+                                        <i class="fas fa-list-ol me-2 text-success"></i>Max Results
+                                    </label>
+                                    <select class="form-select form-select-lg" id="discoveryMaxResults">
+                                        <option value="10" selected>10 jobs per source</option>
+                                        <option value="20">20 jobs per source</option>
+                                        <option value="30">30 jobs per source</option>
+                                        <option value="50">50 jobs per source</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="professional-info-card text-center p-3">
-                                    <i class="fas fa-globe fa-2x text-success mb-2"></i>
-                                    <h6>Access</h6>
-                                    <small class="text-muted">Smart navigation</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="professional-info-card text-center p-3">
-                                    <i class="fas fa-brain fa-2x text-warning mb-2"></i>
-                                    <h6>Extract</h6>
-                                    <small class="text-muted">LLM-powered parsing</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="professional-info-card text-center p-3">
-                                    <i class="fas fa-handshake fa-2x text-info mb-2"></i>
-                                    <h6>Interact</h6>
-                                    <small class="text-muted">Personalized insights</small>
+                            
+                            <div class="row g-4 mt-2">
+                                <div class="col-12">
+                                    <div class="professional-info-card">
+                                        <div class="d-flex align-items-start">
+                                            <div class="professional-info-icon">
+                                                <i class="fas fa-rocket"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="fw-bold mb-2">Job Discovery Process</h6>
+                                                <div class="professional-phases">
+                                                    <div class="professional-phase-item">
+                                                        <i class="fas fa-search text-primary"></i>
+                                                        <span><strong>Search:</strong> Query LinkedIn and Indeed for fresh job postings</span>
+                                                    </div>
+                                                    <div class="professional-phase-item">
+                                                        <i class="fas fa-download text-success"></i>
+                                                        <span><strong>Extract:</strong> Parse job details from listings</span>
+                                                    </div>
+                                                    <div class="professional-phase-item">
+                                                        <i class="fas fa-filter text-warning"></i>
+                                                        <span><strong>Filter:</strong> Apply quality and relevance filters</span>
+                                                    </div>
+                                                    <div class="professional-phase-item">
+                                                        <i class="fas fa-database text-info"></i>
+                                                        <span><strong>Store:</strong> Add new jobs to your database</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="alert alert-info mt-4">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Coming Soon:</strong> Full MCP integration with real-time job discovery, 
-                            AI-powered matching, and intelligent recommendations.
+                    </div>
+                    
+                    <!-- Search Progress -->
+                    <div id="discoveryProgress" style="display: none;">
+                        <div class="professional-progress-container">
+                            <div class="text-center mb-4">
+                                <div class="professional-progress-animation">
+                                    <div class="loading-dots">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                                <h5 id="discoveryCurrentPhase" class="phase-indicator mt-3">Starting job discovery...</h5>
+                            </div>
+                            
+                            <div class="professional-progress-wrapper">
+                                <div class="progress-enhanced mb-4">
+                                    <div class="progress-bar-enhanced" role="progressbar" id="discoveryProgressBar" style="width: 0%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small">
+                                    <span>0%</span>
+                                    <span id="discoveryProgressText">Initializing...</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Real-time Stats -->
+                            <div id="discoveryStats" class="professional-stats-grid mt-4" style="display: none;">
+                                <div class="row g-3 text-center">
+                                    <div class="col-3">
+                                        <div class="stat-item">
+                                            <div class="stat-number" id="urlsDiscovered">0</div>
+                                            <div class="stat-label">URLs Found</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="stat-item">
+                                            <div class="stat-number" id="jobsExtracted">0</div>
+                                            <div class="stat-label">Jobs Extracted</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="stat-item">
+                                            <div class="stat-number" id="jobsFiltered">0</div>
+                                            <div class="stat-label">Passed Filters</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="stat-item">
+                                            <div class="stat-number" id="jobsStored">0</div>
+                                            <div class="stat-label">Added to DB</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Results -->
+                    <div id="discoveryResults" style="display: none;">
+                        <div class="professional-results-header">
+                            <h5 class="fw-bold text-success mb-3">
+                                <i class="fas fa-check-circle me-2"></i>Job Discovery Complete!
+                            </h5>
+                            <div class="professional-summary-stats">
+                                <div class="row g-3 text-center">
+                                    <div class="col-4">
+                                        <div class="professional-result-stat">
+                                            <div class="number text-primary" id="finalUrlsFound">0</div>
+                                            <div class="label">URLs Discovered</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="professional-result-stat">
+                                            <div class="number text-success" id="finalJobsAdded">0</div>
+                                            <div class="label">New Jobs Added</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="professional-result-stat">
+                                            <div class="number text-info" id="finalDuplicates">0</div>
+                                            <div class="label">Duplicates Skipped</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Error -->
+                    <div id="discoveryError" style="display: none;">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Discovery Failed:</strong>
+                            <div id="discoveryErrorMessage"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer professional-modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Close Preview
-                </button>
-                <button type="button" class="btn btn-professional-primary" disabled>
-                    <i class="fas fa-rocket me-2"></i>Feature In Development
-                </button>
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div id="discoveryModalStatus" class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Ready to discover fresh job opportunities
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                        <button type="button" class="btn btn-success" id="startDiscoveryBtn" onclick="startJobDiscovery()">
+                            <i class="fas fa-rocket me-2"></i>Start Discovery
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="cancelDiscoveryBtn" onclick="cancelJobDiscovery()" style="display: none;">
+                            <i class="fas fa-stop me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="viewNewJobsBtn" onclick="viewDiscoveredJobs()" style="display: none;">
+                            <i class="fas fa-eye me-1"></i>View New Jobs
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2314,6 +2448,311 @@ window.addEventListener('beforeunload', () => {
     if (mcpSearchInterval) {
         clearInterval(mcpSearchInterval);
     }
+});
+
+// Real Job Discovery Functions
+let discoverySearchActive = false;
+let discoverySearchInterval = null;
+let discoveryStartTime = null;
+
+function startRealJobDiscovery() {
+    // Pre-fill the search term from the main search input
+    const mainSearchInput = document.querySelector('input[name="search"]');
+    if (mainSearchInput && mainSearchInput.value.trim()) {
+        document.getElementById('discoverySearchTerm').value = mainSearchInput.value.trim();
+    }
+    
+    // Reset modal state
+    resetDiscoveryModalState();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('realtimeSearchModal'));
+    modal.show();
+}
+
+function resetDiscoveryModalState() {
+    // Show config, hide others
+    document.getElementById('discoveryConfig').style.display = 'block';
+    document.getElementById('discoveryProgress').style.display = 'none';
+    document.getElementById('discoveryResults').style.display = 'none';
+    document.getElementById('discoveryError').style.display = 'none';
+    
+    // Reset buttons
+    document.getElementById('startDiscoveryBtn').style.display = 'inline-block';
+    document.getElementById('cancelDiscoveryBtn').style.display = 'none';
+    document.getElementById('viewNewJobsBtn').style.display = 'none';
+    
+    // Reset progress
+    document.getElementById('discoveryProgressBar').style.width = '0%';
+    document.getElementById('discoveryCurrentPhase').textContent = 'Ready to start...';
+    document.getElementById('discoveryProgressText').textContent = 'Ready';
+    
+    // Reset and hide stats
+    document.getElementById('discoveryStats').style.display = 'none';
+    resetDiscoveryStats();
+    
+    // Clear any existing intervals
+    if (discoverySearchInterval) {
+        clearInterval(discoverySearchInterval);
+        discoverySearchInterval = null;
+    }
+    
+    updateDiscoveryModalStatus('Ready to discover fresh job opportunities');
+}
+
+function resetDiscoveryStats() {
+    document.getElementById('urlsDiscovered').textContent = '0';
+    document.getElementById('jobsExtracted').textContent = '0';
+    document.getElementById('jobsFiltered').textContent = '0';
+    document.getElementById('jobsStored').textContent = '0';
+}
+
+function startJobDiscovery() {
+    const searchTerm = document.getElementById('discoverySearchTerm').value.trim();
+    const maxResults = parseInt(document.getElementById('discoveryMaxResults').value);
+    
+    if (!searchTerm) {
+        showEnhancedToast('Input Required', 'Please enter a search term', 'warning');
+        return;
+    }
+    
+    // Update UI for search start
+    discoverySearchActive = true;
+    discoveryStartTime = Date.now();
+    
+    document.getElementById('discoveryConfig').style.display = 'none';
+    document.getElementById('discoveryProgress').style.display = 'block';
+    document.getElementById('startDiscoveryBtn').style.display = 'none';
+    document.getElementById('cancelDiscoveryBtn').style.display = 'inline-block';
+    
+    // Reset progress indicators
+    updateDiscoveryProgress(0, 'Initializing job discovery...');
+    
+    // Start the real-time search
+    const searchData = {
+        search_term: searchTerm,
+        max_results: maxResults
+    };
+    
+    fetch('/api/realtime_search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Start monitoring search progress
+            discoverySearchInterval = setInterval(() => checkDiscoveryProgress(), 2000);
+            updateDiscoveryModalStatus('Job discovery initiated successfully');
+            showEnhancedToast('Discovery Started', 'Job discovery is now running...', 'info');
+        } else {
+            throw new Error(data.error || 'Failed to start job discovery');
+        }
+    })
+    .catch(error => {
+        console.error('Job Discovery Error:', error);
+        showDiscoveryError(error.message);
+        resetDiscoverySearch();
+    });
+}
+
+function checkDiscoveryProgress() {
+    fetch('/api/realtime_search/status')
+    .then(response => response.json())
+    .then(data => {
+        if (!data.is_running) {
+            discoverySearchActive = false;
+            if (discoverySearchInterval) {
+                clearInterval(discoverySearchInterval);
+                discoverySearchInterval = null;
+            }
+            
+            if (data.error) {
+                showDiscoveryError(data.error);
+            } else {
+                completeJobDiscovery(data);
+            }
+        } else {
+            // Update progress
+            updateDiscoveryProgressFromStatus(data);
+        }
+    })
+    .catch(error => {
+        console.error('Progress check error:', error);
+        // Don't stop the search for minor errors, but show warning
+        console.warn('Failed to check progress, continuing...');
+    });
+}
+
+function updateDiscoveryProgressFromStatus(data) {
+    const { progress = 0, current_phase = 'Processing', results = {} } = data;
+    
+    // Update progress bar
+    updateDiscoveryProgress(progress, current_phase);
+    
+    // Update stats if available
+    updateDiscoveryStats(results);
+    
+    // Update elapsed time
+    if (discoveryStartTime) {
+        const elapsed = Math.floor((Date.now() - discoveryStartTime) / 1000);
+        updateDiscoveryModalStatus(`Discovery running... ${elapsed}s elapsed`);
+    }
+}
+
+function updateDiscoveryProgress(percentage, message) {
+    const progressBar = document.getElementById('discoveryProgressBar');
+    const progressText = document.getElementById('discoveryProgressText');
+    const phaseElement = document.getElementById('discoveryCurrentPhase');
+    
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+    }
+    if (progressText) {
+        progressText.textContent = `${Math.round(percentage)}%`;
+    }
+    if (phaseElement) {
+        phaseElement.textContent = message;
+    }
+}
+
+function updateDiscoveryStats(stats) {
+    const elements = {
+        urlsDiscovered: stats.urls_discovered || 0,
+        jobsExtracted: stats.jobs_extracted || 0,
+        jobsFiltered: stats.jobs_filtered || 0,
+        jobsStored: stats.jobs_stored || 0
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+    
+    // Show stats if any data is available
+    const statsContainer = document.getElementById('discoveryStats');
+    if (statsContainer && Object.values(elements).some(v => v > 0)) {
+        statsContainer.style.display = 'block';
+    }
+}
+
+function completeJobDiscovery(data) {
+    discoverySearchActive = false;
+    
+    // Update final progress
+    updateDiscoveryProgress(100, 'Job discovery completed successfully!');
+    
+    // Show completion after a brief delay
+    setTimeout(() => {
+        document.getElementById('discoveryProgress').style.display = 'none';
+        document.getElementById('discoveryResults').style.display = 'block';
+        
+        // Update final stats
+        const results = data.results || {};
+        document.getElementById('finalUrlsFound').textContent = results.urls_discovered || 0;
+        document.getElementById('finalJobsAdded').textContent = results.jobs_stored || 0;
+        document.getElementById('finalDuplicates').textContent = results.duplicates || 0;
+        
+        updateDiscoveryModalStatus(`Discovery complete! Found ${results.jobs_stored || 0} new jobs.`);
+        
+        // Reset buttons
+        document.getElementById('cancelDiscoveryBtn').style.display = 'none';
+        document.getElementById('startDiscoveryBtn').style.display = 'inline-block';
+        document.getElementById('startDiscoveryBtn').innerHTML = '<i class="fas fa-refresh me-2"></i>Search Again';
+        
+        if (results.jobs_stored > 0) {
+            document.getElementById('viewNewJobsBtn').style.display = 'inline-block';
+        }
+        
+        // Show success notification
+        showEnhancedToast('Discovery Complete', `Found ${results.jobs_stored || 0} new opportunities!`, 'success');
+        
+    }, 1000);
+}
+
+function showDiscoveryError(error) {
+    document.getElementById('discoveryProgress').style.display = 'none';
+    document.getElementById('discoveryError').style.display = 'block';
+    document.getElementById('discoveryErrorMessage').textContent = error;
+    
+    // Reset buttons
+    document.getElementById('cancelDiscoveryBtn').style.display = 'none';
+    document.getElementById('startDiscoveryBtn').style.display = 'inline-block';
+    document.getElementById('startDiscoveryBtn').innerHTML = '<i class="fas fa-rocket me-2"></i>Start Discovery';
+    
+    updateDiscoveryModalStatus('Discovery failed - ready to try again');
+    showEnhancedToast('Discovery Failed', error, 'error');
+}
+
+function cancelJobDiscovery() {
+    if (!discoverySearchActive) return;
+    
+    discoverySearchActive = false;
+    if (discoverySearchInterval) {
+        clearInterval(discoverySearchInterval);
+        discoverySearchInterval = null;
+    }
+    
+    // Call cancel endpoint
+    fetch('/api/realtime_search/cancel', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        showEnhancedToast('Discovery Cancelled', 'Job discovery has been cancelled', 'info');
+    })
+    .catch(error => console.warn('Cancel request failed:', error));
+    
+    resetDiscoverySearch();
+}
+
+function resetDiscoverySearch() {
+    discoverySearchActive = false;
+    discoveryStartTime = null;
+    
+    if (discoverySearchInterval) {
+        clearInterval(discoverySearchInterval);
+        discoverySearchInterval = null;
+    }
+    
+    // Reset UI
+    document.getElementById('discoveryConfig').style.display = 'block';
+    document.getElementById('discoveryProgress').style.display = 'none';
+    document.getElementById('discoveryResults').style.display = 'none';
+    document.getElementById('discoveryError').style.display = 'none';
+    document.getElementById('startDiscoveryBtn').style.display = 'inline-block';
+    document.getElementById('cancelDiscoveryBtn').style.display = 'none';
+    document.getElementById('viewNewJobsBtn').style.display = 'none';
+    document.getElementById('startDiscoveryBtn').innerHTML = '<i class="fas fa-rocket me-2"></i>Start Discovery';
+    
+    updateDiscoveryModalStatus('Ready to discover fresh job opportunities');
+}
+
+function viewDiscoveredJobs() {
+    // Close modal and redirect to view new jobs
+    const modal = bootstrap.Modal.getInstance(document.getElementById('realtimeSearchModal'));
+    modal.hide();
+    
+    // Redirect to show new jobs
+    window.location.href = '{{ url_for("index", status="new") }}';
+}
+
+function updateDiscoveryModalStatus(message) {
+    const statusElement = document.getElementById('discoveryModalStatus');
+    if (statusElement) {
+        statusElement.innerHTML = `<i class="fas fa-info-circle me-1"></i>${message}`;
+    }
+}
+
+// Initialize discovery functionality
+$(document).ready(function() {
+    // Reset modal on close
+    $('#realtimeSearchModal').on('hidden.bs.modal', function() {
+        if (!discoverySearchActive) {
+            resetDiscoverySearch();
+        }
+    });
 });
 </script>
 {% endblock %}

@@ -221,35 +221,6 @@
                         </a>
                     </li>
                 </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="statusDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-filter"></i>
-                            <span>Filter Status</span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='all') }}">
-                                <i class="fas fa-list me-2"></i>All Jobs
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='new') }}">
-                                <i class="fas fa-star me-2"></i>New
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='interested') }}">
-                                <i class="fas fa-heart me-2"></i>Interested
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='applied') }}">
-                                <i class="fas fa-paper-plane me-2"></i>Applied
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='interview') }}">
-                                <i class="fas fa-handshake me-2"></i>Interview
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('index', status='rejected') }}">
-                                <i class="fas fa-times me-2"></i>Rejected
-                            </a></li>
-                        </ul>
-                    </li>
-                </ul>
             </div>
         </div>
     </nav>    <!-- Flash Messages -->
