@@ -445,6 +445,8 @@ def run_realtime_search(search_term, max_results):
         start_time = time.time()
         max_wait_time = 600  # 10 minutes instead of 5
         check_interval = 5   # Check every 5 seconds instead of 10
+        consecutive_errors = 0
+        max_consecutive_errors = 3
         
         status_url = f"https://api.brightdata.com/datasets/v3/progress/{snapshot_id}"
         download_url = f"https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}?format=json"
@@ -452,8 +454,13 @@ def run_realtime_search(search_term, max_results):
         logger.info(f"⏳ Waiting for LinkedIn scraping to complete (max {max_wait_time}s)...")
         
         job_data = None
+        last_progress = 0
+        progress_stall_count = 0
+        max_stall_count = 12  # 60 seconds of no progress (12 * 5 second intervals)
+        
         while time.time() - start_time < max_wait_time:
             if not realtime_search_status['is_running']:  # Check for cancellation
+                logger.info("🛑 Search cancelled by user")
                 linkedin_scraper.close()
                 return
                 
@@ -463,8 +470,30 @@ def run_realtime_search(search_term, max_results):
                 status_response.raise_for_status()
                 status_data = status_response.json()
                 
-                linkedin_status = status_data.get('status')
+                linkedin_status = status_data.get('status', 'unknown')
                 linkedin_progress = status_data.get('progress', 0)
+                
+                # Reset error counter on successful request
+                consecutive_errors = 0
+                
+                # Check for progress stall
+                if linkedin_progress == last_progress:
+                    progress_stall_count += 1
+                    if progress_stall_count >= max_stall_count:
+                        logger.warning(f"📊 LinkedIn progress stalled at {linkedin_progress}% for {progress_stall_count * check_interval}s")
+                        # Try to download data anyway in case it's ready
+                        try:
+                            download_response = linkedin_scraper.session.get(download_url, timeout=60)
+                            if download_response.status_code == 200:
+                                job_data = download_response.json()
+                                if isinstance(job_data, list) and len(job_data) > 0:
+                                    logger.info(f"✅ Found data despite stalled progress: {len(job_data)} jobs")
+                                    break
+                        except Exception as download_error:
+                            logger.debug(f"📊 Download attempt during stall failed: {download_error}")
+                else:
+                    progress_stall_count = 0  # Reset stall counter
+                    last_progress = linkedin_progress
                 
                 # Update our progress based on LinkedIn progress
                 # LinkedIn discovery takes 50% of total time (10% to 60%)
@@ -501,17 +530,44 @@ def run_realtime_search(search_term, max_results):
                         
                 elif linkedin_status == 'failed':
                     error = status_data.get('error', 'Unknown error')
+                    logger.error(f"❌ LinkedIn scraping failed: {error}")
                     realtime_search_status['error'] = f"LinkedIn scraping failed: {error}"
                     realtime_search_status['is_running'] = False
                     realtime_search_status['completed_at'] = datetime.now().isoformat()
                     linkedin_scraper.close()
                     return
                 
+                elif linkedin_status == 'running' and linkedin_progress == 0:
+                    # Special handling for stuck at 0% progress
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time > 60:  # If stuck at 0% for more than 1 minute
+                        logger.warning(f"📊 LinkedIn stuck at 0% for {elapsed_time:.0f}s, checking if data is available...")
+                        try:
+                            download_response = linkedin_scraper.session.get(download_url, timeout=30)
+                            if download_response.status_code == 200:
+                                test_data = download_response.json()
+                                if isinstance(test_data, list) and len(test_data) > 0:
+                                    logger.info(f"✅ Found {len(test_data)} jobs despite 0% progress!")
+                                    job_data = test_data
+                                    break
+                        except Exception as test_error:
+                            logger.debug(f"📊 Test download failed: {test_error}")
+                
                 # Wait before next check
                 time.sleep(check_interval)
                 
             except Exception as e:
-                logger.error(f"❌ Error checking LinkedIn status: {e}")
+                consecutive_errors += 1
+                logger.error(f"❌ Error checking LinkedIn status (attempt {consecutive_errors}): {e}")
+                
+                if consecutive_errors >= max_consecutive_errors:
+                    logger.error(f"❌ Too many consecutive errors ({consecutive_errors}), aborting LinkedIn search")
+                    realtime_search_status['error'] = f'LinkedIn status check failed: {e}'
+                    realtime_search_status['is_running'] = False
+                    realtime_search_status['completed_at'] = datetime.now().isoformat()
+                    linkedin_scraper.close()
+                    return
+                
                 time.sleep(check_interval)
         
         # Check if we got data
@@ -1183,15 +1239,30 @@ async def run_mcp_search_async(search_term, max_results):
         
         for i, job in enumerate(analyzed_jobs):
             try:
+                # Extract job data safely with better error handling
+                job_title = str(job.get('job_title', 'MCP Enhanced Job')).strip()
+                company = str(job.get('company', 'Unknown Company')).strip()
+                location = str(job.get('location', 'Location Not Specified')).strip()
+                description = str(job.get('description', '')).strip()
+                url = str(job.get('source_url', job.get('url', ''))).strip()
+                
+                # Generate unique job ID if not present
+                if 'job_id' not in job or not job['job_id']:
+                    import hashlib
+                    unique_data = f"{job_title}_{company}_{int(time.time())}_{i}"
+                    job_id = f"mcp_{hashlib.md5(unique_data.encode()).hexdigest()[:8]}"
+                else:
+                    job_id = str(job.get('job_id'))
+                
                 # Convert to standard format for database
                 standard_job = {
-                    'job_id': job.get('job_id', f"mcp_{int(time.time())}_{i}"),
-                    'job_title': job.get('job_title', 'MCP Enhanced Job'),
-                    'company': job.get('company', 'Unknown Company'),
-                    'location': job.get('location', 'Location Not Specified'),
-                    'description': job.get('description', ''),
-                    'url': job.get('source_url', job.get('url', '')),
-                    'status': 'new',
+                    'job_id': job_id,
+                    'job_title': job_title,
+                    'company': company,
+                    'location': location,
+                    'description': description,
+                    'url': url,
+                    'status': 'new',  # Store MCP jobs as new like other jobs
                     'source': 'MCP_Enhanced_Discovery',
                     'extracted_at': datetime.now().isoformat(),
                     'job_type': 'Internship',
@@ -1200,21 +1271,26 @@ async def run_mcp_search_async(search_term, max_results):
                 
                 # Add MCP-specific enhancements if available
                 if 'mcp_analysis' in job:
-                    standard_job['notes'] = f"MCP Analysis: {job.get('recommendation', 'No recommendation')}"
+                    recommendation = job.get('mcp_analysis', {}).get('recommendation', 'No recommendation')
+                    match_score = job.get('mcp_analysis', {}).get('match_score', 0.0)
+                    standard_job['notes'] = f"MCP Analysis - Score: {match_score:.1%} - {recommendation}"
                 
-                logger.debug(f"📝 Attempting to store MCP job {i+1}: {standard_job['job_title']}")
+                logger.debug(f"📝 Attempting to store MCP job {i+1}: {job_title} (ID: {job_id})")
                 
                 success = db.insert_job(standard_job)
                 if success:
                     stored_count += 1
-                    logger.info(f"✅ Stored MCP job {i+1}: {standard_job['job_title']}")
+                    logger.info(f"✅ Stored MCP job {i+1}: {job_title} at {company}")
                 else:
-                    storage_errors.append(f"Job {i+1}: Insert returned False (likely duplicate)")
-                    logger.warning(f"⚠️ Job {i+1} not stored - likely duplicate: {standard_job['job_title']}")
+                    duplicate_msg = f"Job {i+1}: Duplicate detected - {job_title} at {company}"
+                    storage_errors.append(duplicate_msg)
+                    logger.warning(f"⚠️ {duplicate_msg}")
                     
             except Exception as e:
-                storage_errors.append(f"Job {i+1}: {str(e)}")
+                error_msg = f"Job {i+1}: Storage error - {str(e)}"
+                storage_errors.append(error_msg)
                 logger.error(f"❌ Error storing MCP job {i+1}: {e}")
+                logger.debug(f"❌ Job data that caused error: {str(job)[:200]}...")
                 continue
         
         if storage_errors and stored_count == 0:

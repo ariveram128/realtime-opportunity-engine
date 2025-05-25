@@ -476,11 +476,8 @@
                         <button type="button" class="btn btn-success" id="startMCPBtn" onclick="executeMCPSearch()">
                             <i class="fas fa-robot me-1"></i>Start MCP Pipeline
                         </button>
-                        <button type="button" class="btn btn-danger" id="cancelMCPBtn" style="display: none;" onclick="cancelMCPSearch()">
+                        <button type="button" class="btn btn-outline-danger" id="cancelMCPBtn" style="display: none;" onclick="cancelMCPSearch()">
                             <i class="fas fa-stop me-1"></i>Cancel Pipeline
-                        </button>
-                        <button type="button" class="btn btn-primary" id="viewMCPJobsBtn" style="display: none;" onclick="viewMCPJobs()">
-                            <i class="fas fa-eye me-1"></i>View Enhanced Jobs
                         </button>
                     </div>
                 </div>
@@ -1084,7 +1081,6 @@ function resetMCPModalState() {
     // Reset buttons
     document.getElementById('startMCPBtn').style.display = 'inline-block';
     document.getElementById('cancelMCPBtn').style.display = 'none';
-    document.getElementById('viewMCPJobsBtn').style.display = 'none';
     
     // Reset progress
     document.getElementById('mcpProgressBar').style.width = '0%';
@@ -1188,7 +1184,6 @@ function showMCPResults(results) {
     document.getElementById('mcpProgress').style.display = 'none';
     document.getElementById('mcpResults').style.display = 'block';
     document.getElementById('cancelMCPBtn').style.display = 'none';
-    document.getElementById('viewMCPJobsBtn').style.display = 'inline-block';
     
     // Update results summary
     const summary = `
@@ -1245,15 +1240,6 @@ function cancelMCPSearch() {
     .catch(error => {
         console.error('Error cancelling MCP search:', error);
     });
-}
-
-function viewMCPJobs() {
-    // Close modal and redirect to view MCP enhanced jobs
-    const modal = bootstrap.Modal.getInstance(document.getElementById('mcpSearchModal'));
-    modal.hide();
-    
-    // Redirect to show MCP enhanced jobs
-    window.location.href = '{{ url_for("index", status="enhanced") }}';
 }
 
 // Individual Job Deletion Function
