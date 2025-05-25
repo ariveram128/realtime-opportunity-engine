@@ -1674,6 +1674,372 @@
     .professional-modal #modalJobDescription * {
         color: rgba(255, 255, 255, 0.9) !important;
     }
+
+    /* Fix for search form elements alignment */
+    .professional-search-container .form-control,
+    .professional-search-container .btn {
+        height: 54px !important; /* Ensure consistent height */
+        line-height: 1.5 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .professional-search-container .input-group {
+        height: 54px !important;
+    }
+
+    /* Match search input border radius to buttons */
+    .professional-search-container .input-group .form-control {
+        border-radius: var(--radius-xl) !important;
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+
+    .professional-search-container .input-group-text {
+        height: 54px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: var(--radius-xl) !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+
+    /* Ensure the button sizes match the input */
+    .professional-search-container .d-grid.gap-2.d-md-flex {
+        height: 54px !important;
+    }
+
+    .professional-search-container .btn {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-radius: var(--radius-xl) !important;
+    }
+
+    /* Ensure full width on smaller screens */
+    @media (max-width: 767.98px) {
+        .professional-search-container .d-grid.gap-2.d-md-flex {
+            height: auto !important;
+        }
+        
+        .professional-search-container .btn {
+            margin-top: 0.5rem;
+        }
+    }
+    
+    /* Stepper component styles */
+    .stepper-group {
+        display: flex;
+        align-items: stretch;
+    }
+    
+    .stepper-group .form-control {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        text-align: center;
+        /* Hide default browser spinner buttons */
+        -moz-appearance: textfield;
+    }
+    
+    /* Hide default browser spinner for Chrome, Safari, Edge, Opera */
+    .stepper-group .form-control::-webkit-outer-spin-button,
+    .stepper-group .form-control::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .stepper-controls {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stepper-controls .btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        padding: 0.375rem 0.5rem;
+        height: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-left: 0;
+    }
+    
+    .stepper-up {
+        border-bottom: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .stepper-down {
+        border-top: 0;
+        border-top-right-radius: 0;
+    }
+    
+    .stepper-controls .btn:hover {
+        background-color: var(--bs-primary);
+        color: white;
+        border-color: var(--bs-primary);
+    }
+    
+    .stepper-controls .btn:active {
+        background-color: var(--bs-primary-dark, #0056b3);
+        color: white;
+    }
+    
+    /* Glassmorphic Modal Styles */
+    .glassmorphic-modal {
+        background: linear-gradient(135deg, rgba(77, 74, 199, 0.7) 0%, rgba(150, 92, 235, 0.7) 50%, rgba(255, 108, 146, 0.7) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: var(--radius-lg, 16px);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        color: white;
+        overflow: hidden;
+    }
+    
+    .glassmorphic-modal-header {
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 1.5rem;
+    }
+    
+    .glassmorphic-modal-body {
+        background: transparent;
+        padding: 1.5rem;
+    }
+    
+    .glassmorphic-modal-icon {
+        background: rgba(255, 255, 255, 0.15);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .glassmorphic-input {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: var(--radius-md, 12px);
+    }
+    
+    .glassmorphic-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .glassmorphic-input:focus {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.15);
+        color: white;
+    }
+    
+    .glassmorphic-controls .btn {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .glassmorphic-controls .btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .glassmorphic-info-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-lg, 16px);
+        padding: 1.5rem;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .glassmorphic-info-icon {
+        background: rgba(255, 255, 255, 0.15);
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .glassmorphic-phases {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .glassmorphic-phase-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-md, 12px);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    .glassmorphic-phase-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateX(5px);
+    }
+    
+    .modal-footer.glassmorphic-modal-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Glassmorphic Progress Styles */
+    .glassmorphic-progress-container {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg, 16px);
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        color: white;
+        overflow: hidden;
+    }
+
+    .glassmorphic-progress-animation {
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-progress {
+        background: rgba(255, 255, 255, 0.15);
+        height: 10px;
+        border-radius: var(--radius-full, 9999px);
+        overflow: hidden;
+        padding: 0; /* Remove any padding */
+        margin: 0;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .glassmorphic-progress-bar {
+        background: linear-gradient(90deg, rgba(75, 111, 255, 0.8), rgba(155, 89, 182, 0.8));
+        height: 100%; /* Full height */
+        border-radius: 0; /* Remove border radius from inner bar */
+        transition: width 0.6s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(75, 111, 255, 0.5);
+    }
+
+    .glassmorphic-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+        width: 50%; /* Control width of shimmer effect */
+    }
+
+    .glassmorphic-stats-grid {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-stat-item {
+        text-align: center;
+    }
+
+    .glassmorphic-stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .glassmorphic-stat-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .glassmorphic-alert-danger {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 0, 0, 0.2);
+        border-radius: var(--radius-lg, 16px);
+        padding: 1rem;
+        color: rgba(255, 0, 0, 0.9);
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-results-header {
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-summary-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-result-stat {
+        text-align: center;
+    }
+
+    .glassmorphic-result-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .glassmorphic-result-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .glassmorphic-btn-primary {
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: var(--radius-lg, 16px);
+        padding: 0.75rem 1rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-btn-primary:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .glassmorphic-btn-outline {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-lg, 16px);
+        padding: 0.75rem 1rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .glassmorphic-btn-outline:hover {
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -2085,72 +2451,81 @@
 <!-- Real-time Job Discovery Modal -->
 <div class="modal fade" id="realtimeSearchModal" tabindex="-1" aria-labelledby="realtimeSearchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
-        <div class="modal-content professional-modal">
-            <div class="modal-header professional-modal-header">
+        <div class="modal-content glassmorphic-modal">
+            <div class="modal-header glassmorphic-modal-header">
                 <div class="d-flex align-items-center">
-                    <div class="professional-modal-icon">
+                    <div class="glassmorphic-modal-icon">
                         <i class="fas fa-globe"></i>
                     </div>
                     <div>
                         <h4 class="modal-title mb-0" id="realtimeSearchModalLabel">Real-time Job Discovery</h4>
-                        <small class="text-muted">Find fresh opportunities from LinkedIn & Indeed</small>
+                        <small class="text-white-50">Find fresh opportunities from LinkedIn & Indeed</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body professional-modal-body">
+            <div class="modal-body glassmorphic-modal-body">
                 <div id="discoverySearchContent">
                     <!-- Search Configuration -->
                     <div id="discoveryConfig">
-                        <div class="professional-search-form">
+                        <div class="glassmorphic-search-form">
                             <div class="row g-4">
                                 <div class="col-md-8">
-                                    <label for="discoverySearchTerm" class="form-label fw-bold">
+                                    <label for="discoverySearchTerm" class="form-label fw-bold text-white">
                                         <i class="fas fa-search me-2 text-primary"></i>Search Query
                                     </label>
-                                    <input type="text" class="form-control form-control-lg" id="discoverySearchTerm" 
+                                    <input type="text" class="form-control form-control-lg glassmorphic-input" id="discoverySearchTerm" 
                                            placeholder="e.g., software engineering internship, marketing intern, data science">
-                                    <div class="form-text">
+                                    <div class="form-text text-white-50">
                                         <i class="fas fa-lightbulb me-1"></i>
                                         Enter keywords to search for internships and entry-level positions.
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="discoveryMaxResults" class="form-label fw-bold">
+                                    <label for="discoveryMaxResults" class="form-label fw-bold text-white">
                                         <i class="fas fa-list-ol me-2 text-success"></i>Max Results
                                     </label>
-                                    <select class="form-select form-select-lg" id="discoveryMaxResults">
-                                        <option value="10" selected>10 jobs per source</option>
-                                        <option value="20">20 jobs per source</option>
-                                        <option value="30">30 jobs per source</option>
-                                        <option value="50">50 jobs per source</option>
-                                    </select>
+                                    <div class="input-group stepper-group">
+                                        <input type="number" class="form-control form-control-lg glassmorphic-input" id="discoveryMaxResults" value="10" min="1" max="100" readonly>
+                                        <div class="stepper-controls glassmorphic-controls">
+                                            <button type="button" class="btn btn-outline-light stepper-up" onclick="incrementStepper('discoveryMaxResults')">
+                                                <i class="fas fa-chevron-up"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-light stepper-down" onclick="decrementStepper('discoveryMaxResults')">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-white-50">
+                                        Jobs per source
+                                        <i class="fas fa-info-circle ms-1 text-primary" data-bs-toggle="tooltip" data-bs-placement="right" title="Higher values will increase search time but may find more opportunities"></i>
+                                    </small>
                                 </div>
                             </div>
                             
                             <div class="row g-4 mt-2">
                                 <div class="col-12">
-                                    <div class="professional-info-card">
+                                    <div class="glassmorphic-info-card">
                                         <div class="d-flex align-items-start">
-                                            <div class="professional-info-icon">
+                                            <div class="glassmorphic-info-icon">
                                                 <i class="fas fa-rocket"></i>
                                             </div>
                                             <div>
-                                                <h6 class="fw-bold mb-2">Job Discovery Process</h6>
-                                                <div class="professional-phases">
-                                                    <div class="professional-phase-item">
+                                                <h6 class="fw-bold mb-2 text-white">Job Discovery Process</h6>
+                                                <div class="glassmorphic-phases">
+                                                    <div class="glassmorphic-phase-item">
                                                         <i class="fas fa-search text-primary"></i>
                                                         <span><strong>Search:</strong> Query LinkedIn and Indeed for fresh job postings</span>
                                                     </div>
-                                                    <div class="professional-phase-item">
+                                                    <div class="glassmorphic-phase-item">
                                                         <i class="fas fa-download text-success"></i>
                                                         <span><strong>Extract:</strong> Parse job details from listings</span>
                                                     </div>
-                                                    <div class="professional-phase-item">
+                                                    <div class="glassmorphic-phase-item">
                                                         <i class="fas fa-filter text-warning"></i>
                                                         <span><strong>Filter:</strong> Apply quality and relevance filters</span>
                                                     </div>
-                                                    <div class="professional-phase-item">
+                                                    <div class="glassmorphic-phase-item">
                                                         <i class="fas fa-database text-info"></i>
                                                         <span><strong>Store:</strong> Add new jobs to your database</span>
                                                     </div>
@@ -2165,23 +2540,23 @@
                     
                     <!-- Search Progress -->
                     <div id="discoveryProgress" style="display: none;">
-                        <div class="professional-progress-container">
+                        <div class="glassmorphic-progress-container">
                             <div class="text-center mb-4">
-                                <div class="professional-progress-animation">
+                                <div class="glassmorphic-progress-animation">
                                     <div class="loading-dots">
                                         <span></span>
                                         <span></span>
                                         <span></span>
                                     </div>
                                 </div>
-                                <h5 id="discoveryCurrentPhase" class="phase-indicator mt-3">Starting job discovery...</h5>
+                                <h5 id="discoveryCurrentPhase" class="phase-indicator mt-3 text-white">Starting job discovery...</h5>
                             </div>
                             
-                            <div class="professional-progress-wrapper">
-                                <div class="progress-enhanced mb-4">
-                                    <div class="progress-bar-enhanced" role="progressbar" id="discoveryProgressBar" style="width: 0%"></div>
+                            <div class="glassmorphic-progress-wrapper">
+                                <div class="progress glassmorphic-progress mb-4">
+                                    <div class="progress-bar glassmorphic-progress-bar" role="progressbar" id="discoveryProgressBar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
                                 </div>
-                                <div class="d-flex justify-content-between text-muted small">
+                                <div class="d-flex justify-content-between text-white-50 small">
                                     <span>0%</span>
                                     <span id="discoveryProgressText">Initializing...</span>
                                     <span>100%</span>
@@ -2189,30 +2564,30 @@
                             </div>
                             
                             <!-- Real-time Stats -->
-                            <div id="discoveryStats" class="professional-stats-grid mt-4" style="display: none;">
+                            <div id="discoveryStats" class="glassmorphic-stats-grid mt-4" style="display: none;">
                                 <div class="row g-3 text-center">
                                     <div class="col-3">
-                                        <div class="stat-item">
-                                            <div class="stat-number" id="urlsDiscovered">0</div>
-                                            <div class="stat-label">URLs Found</div>
+                                        <div class="glassmorphic-stat-item">
+                                            <div class="stat-number text-white" id="urlsDiscovered">0</div>
+                                            <div class="stat-label text-white-50">URLs Found</div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="stat-item">
-                                            <div class="stat-number" id="jobsExtracted">0</div>
-                                            <div class="stat-label">Jobs Extracted</div>
+                                        <div class="glassmorphic-stat-item">
+                                            <div class="stat-number text-white" id="jobsExtracted">0</div>
+                                            <div class="stat-label text-white-50">Jobs Extracted</div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="stat-item">
-                                            <div class="stat-number" id="jobsFiltered">0</div>
-                                            <div class="stat-label">Passed Filters</div>
+                                        <div class="glassmorphic-stat-item">
+                                            <div class="stat-number text-white" id="jobsFiltered">0</div>
+                                            <div class="stat-label text-white-50">Passed Filters</div>
                                         </div>
                                     </div>
                                     <div class="col-3">
-                                        <div class="stat-item">
-                                            <div class="stat-number" id="jobsStored">0</div>
-                                            <div class="stat-label">Added to DB</div>
+                                        <div class="glassmorphic-stat-item">
+                                            <div class="stat-number text-white" id="jobsStored">0</div>
+                                            <div class="stat-label text-white-50">Added to DB</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2222,28 +2597,28 @@
                     
                     <!-- Search Results -->
                     <div id="discoveryResults" style="display: none;">
-                        <div class="professional-results-header">
+                        <div class="glassmorphic-results-header">
                             <h5 class="fw-bold text-success mb-3">
                                 <i class="fas fa-check-circle me-2"></i>Job Discovery Complete!
                             </h5>
-                            <div class="professional-summary-stats">
+                            <div class="glassmorphic-summary-stats">
                                 <div class="row g-3 text-center">
                                     <div class="col-4">
-                                        <div class="professional-result-stat">
+                                        <div class="glassmorphic-result-stat">
                                             <div class="number text-primary" id="finalUrlsFound">0</div>
-                                            <div class="label">URLs Discovered</div>
+                                            <div class="label text-white-50">URLs Discovered</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="professional-result-stat">
+                                        <div class="glassmorphic-result-stat">
                                             <div class="number text-success" id="finalJobsAdded">0</div>
-                                            <div class="label">New Jobs Added</div>
+                                            <div class="label text-white-50">New Jobs Added</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="professional-result-stat">
+                                        <div class="glassmorphic-result-stat">
                                             <div class="number text-info" id="finalDuplicates">0</div>
-                                            <div class="label">Duplicates Skipped</div>
+                                            <div class="label text-white-50">Duplicates Skipped</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2253,7 +2628,7 @@
                     
                     <!-- Search Error -->
                     <div id="discoveryError" style="display: none;">
-                        <div class="alert alert-danger">
+                        <div class="alert glassmorphic-alert-danger">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Discovery Failed:</strong>
                             <div id="discoveryErrorMessage"></div>
@@ -2261,23 +2636,23 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer professional-modal-footer">
+            <div class="modal-footer glassmorphic-modal-footer">
                 <div class="d-flex justify-content-between align-items-center w-100">
-                    <div id="discoveryModalStatus" class="text-muted">
+                    <div id="discoveryModalStatus" class="text-white-50">
                         <i class="fas fa-info-circle me-1"></i>
                         Ready to discover fresh job opportunities
                     </div>
                     <div>
-                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-outline-light me-2" data-bs-dismiss="modal">
                             <i class="fas fa-times me-1"></i>Close
                         </button>
-                        <button type="button" class="btn btn-success" id="startDiscoveryBtn" onclick="startJobDiscovery()">
+                        <button type="button" class="btn btn-primary glassmorphic-btn-primary" id="startDiscoveryBtn" onclick="startJobDiscovery()">
                             <i class="fas fa-rocket me-2"></i>Start Discovery
                         </button>
-                        <button type="button" class="btn btn-outline-danger" id="cancelDiscoveryBtn" onclick="cancelJobDiscovery()" style="display: none;">
+                        <button type="button" class="btn btn-outline-danger glassmorphic-btn-outline" id="cancelDiscoveryBtn" onclick="cancelJobDiscovery()" style="display: none;">
                             <i class="fas fa-stop me-1"></i>Cancel
                         </button>
-                        <button type="button" class="btn btn-primary" id="viewNewJobsBtn" onclick="viewDiscoveredJobs()" style="display: none;">
+                        <button type="button" class="btn btn-primary glassmorphic-btn-primary" id="viewNewJobsBtn" onclick="viewDiscoveredJobs()" style="display: none;">
                             <i class="fas fa-eye me-1"></i>View New Jobs
                         </button>
                     </div>
@@ -2806,6 +3181,7 @@ function updateMCPProgress(percentage, message) {
     
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
+        progressBar.setAttribute('aria-valuenow', Math.round(percentage));
     }
     if (progressText) {
         progressText.textContent = `${Math.round(percentage)}%`;
@@ -3684,6 +4060,7 @@ function updateDiscoveryProgress(percentage, message) {
     
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
+        progressBar.setAttribute('aria-valuenow', Math.round(percentage));
     }
     if (progressText) {
         progressText.textContent = `${Math.round(percentage)}%`;
@@ -3817,7 +4194,7 @@ function viewDiscoveredJobs() {
 function updateDiscoveryModalStatus(message) {
     const statusElement = document.getElementById('discoveryModalStatus');
     if (statusElement) {
-        statusElement.innerHTML = `<i class="fas fa-info-circle me-1"></i>${message}`;
+        statusElement.innerHTML = `<i class="fas fa-info-circle me-1"></i> ${message}`;
     }
 }
 
@@ -4190,6 +4567,32 @@ function updateJobStatus(jobId, newStatus, button) {
         // Restore button state
         $button.prop('disabled', false).html(originalHtml);
     });
+}
+
+// Stepper functions for the max results input
+function incrementStepper(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const currentValue = parseInt(input.value);
+    const max = parseInt(input.getAttribute('max') || '100');
+    
+    if (currentValue < max) {
+        input.value = currentValue + 10;
+    }
+}
+
+function decrementStepper(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const currentValue = parseInt(input.value);
+    const min = parseInt(input.getAttribute('min') || '1');
+    
+    // Don't go below 10 for max results
+    if (currentValue > Math.max(min, 10)) {
+        input.value = currentValue - 10;
+    }
 }
 </script>
 
