@@ -470,22 +470,32 @@ def run_realtime_search(search_term, max_results):
         })
         
         # Store jobs in database
-        realtime_search_status['current_phase'] = 'Storing jobs in database...'
+        realtime_search_status['current_phase'] = 'Converting and storing jobs in database...'
         realtime_search_status['progress'] = 90
         
         stored_count = 0
         if jobs: # Ensure there are jobs to store
-            for job_detail in jobs:
-                # Ensure job_detail is a dictionary and has necessary fields
-                if isinstance(job_detail, dict):
-                    # The `db.insert_job` method should ideally handle the conversion
-                    # to its required format, or jobs from BrightData are already standard.
-                    if db.insert_job(job_detail): # store_job now expects a dict
-                        stored_count += 1
-                else:
-                    logger.warning(f"⚠️ Skipping non-dict job item: {type(job_detail)}")
+            # Convert ALL jobs at once from LinkedIn API format to standard format
+            try:
+                logger.info(f"🔄 Converting {len(jobs)} jobs from LinkedIn API format to standard format...")
+                converted_jobs = linkedin_scraper.convert_to_standard_format(jobs)
+                logger.info(f"✅ Successfully converted {len(converted_jobs)} jobs")
+                
+                # Store each converted job
+                for converted_job in converted_jobs:
+                    if isinstance(converted_job, dict):
+                        if db.insert_job(converted_job):
+                            stored_count += 1
+                        else:
+                            logger.debug(f"Job already exists or failed to insert: {converted_job.get('job_title', 'Unknown Title')}")
+                    else:
+                        logger.warning(f"⚠️ Skipping non-dict converted job: {type(converted_job)}")
+                        
+            except Exception as e:
+                logger.error(f"❌ Error during job conversion: {e}")
+                logger.debug(f"🔍 Raw jobs data that failed conversion: {json.dumps(jobs[:2], indent=2)}...")  # Log first 2 jobs only
         
-        logger.info(f"💾 Stored {stored_count}/{len(jobs)} jobs in the database.")
+        logger.info(f"💾 Stored {stored_count}/{len(jobs) if jobs else 0} jobs in the database.")
         
         # Update final results
         realtime_search_status['results']['jobs_stored'] = stored_count
