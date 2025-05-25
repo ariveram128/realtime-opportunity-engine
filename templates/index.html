@@ -917,14 +917,14 @@
     }
     
     .professional-modal .modal-content {
-        background: rgba(30, 30, 50, 0.95);
+        background: rgba(30, 30, 50, 0.95) !important;
         backdrop-filter: var(--glass-backdrop);
         -webkit-backdrop-filter: var(--glass-backdrop);
         border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: var(--radius-2xl);
         box-shadow: var(--shadow-2xl), var(--shadow-colored);
         overflow: hidden;
-        color: white;
+        color: white !important;
         max-height: 90vh;
         display: flex;
         flex-direction: column;
@@ -935,14 +935,17 @@
         max-height: calc(90vh - 200px);
         flex: 1;
         padding: var(--space-2xl);
+        background: rgba(30, 30, 50, 0.95) !important;
+        color: white !important;
     }
     
     .professional-modal-header {
-        background: rgba(20, 20, 40, 0.98);
+        background: rgba(20, 20, 40, 0.98) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         padding: var(--space-xl);
         position: relative;
         flex-shrink: 0;
+        color: white !important;
     }
     
     .professional-modal-header::before {
@@ -982,7 +985,7 @@
     }
     
     .professional-modal-icon i {
-        color: white;
+        color: white !important;
         font-size: 1.5rem;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     }
@@ -995,7 +998,8 @@
     
     .professional-modal-body {
         padding: var(--space-2xl);
-        color: white;
+        color: white !important;
+        background: rgba(30, 30, 50, 0.95) !important;
     }
     
     .professional-modal-body h6 {
@@ -1042,10 +1046,28 @@
     }
     
     .professional-modal-footer {
-        background: rgba(20, 20, 40, 0.98);
+        background: rgba(20, 20, 40, 0.98) !important;
         border-top: 1px solid rgba(255, 255, 255, 0.3);
         padding: var(--space-xl);
         flex-shrink: 0;
+    }
+    
+    /* Enhanced Modal Text Color Fixes */
+    .professional-modal * {
+        color: inherit !important;
+    }
+    
+    .professional-modal .modal-content * {
+        color: white !important;
+    }
+    
+    .professional-modal .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    .professional-modal .fw-semibold {
+        color: white !important;
+        font-weight: 600;
     }
     
     /* Modal Scrollbar Styling */
@@ -1171,7 +1193,7 @@
     
     /* Info Cards */
     .professional-info-card {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.15) !important;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1179,11 +1201,11 @@
         padding: var(--space-lg);
         margin-bottom: var(--space-lg);
         transition: var(--transition-all);
-        color: white;
+        color: white !important;
     }
     
     .professional-info-card:hover {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.2) !important;
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
     }
@@ -1234,6 +1256,28 @@
     .professional-info-card .text-muted {
         color: rgba(255, 255, 255, 0.6) !important;
         font-style: italic;
+    }
+    
+    .professional-info-card .fw-semibold {
+        color: white !important;
+        font-weight: 600;
+    }
+    
+    /* Ensure all text within info cards is visible */
+    .professional-info-card * {
+        color: inherit !important;
+    }
+    
+    .professional-info-card .flex-grow-1 * {
+        color: white !important;
+    }
+    
+    .professional-info-card .flex-grow-1 h6 {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    .professional-info-card .flex-grow-1 .text-muted {
+        color: rgba(255, 255, 255, 0.6) !important;
     }
     
     .professional-icon-wrapper {
@@ -1521,6 +1565,114 @@
     
     .status-indicator:hover::after {
         left: 100%;
+    }
+    
+    /* Enhanced Modal Text Color Fixes */
+    .professional-modal * {
+        color: inherit !important;
+    }
+    
+    .professional-modal .modal-content * {
+        color: white !important;
+    }
+    
+    .professional-modal .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    
+    .professional-modal .fw-semibold {
+        color: white !important;
+        font-weight: 600;
+    }
+    
+    /* Bootstrap Override for Modal */
+    .professional-modal .modal-content {
+        background-color: rgba(30, 30, 50, 0.95) !important;
+        color: white !important;
+    }
+    
+    .professional-modal .modal-header {
+        background-color: rgba(20, 20, 40, 0.98) !important;
+        color: white !important;
+        border-bottom-color: rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    .professional-modal .modal-body {
+        background-color: rgba(30, 30, 50, 0.95) !important;
+        color: white !important;
+    }
+    
+    .professional-modal .modal-footer {
+        background-color: rgba(20, 20, 40, 0.98) !important;
+        color: white !important;
+        border-top-color: rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    /* Override Bootstrap text utilities in modal */
+    .professional-modal .text-dark {
+        color: white !important;
+    }
+    
+    .professional-modal .text-secondary {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .professional-modal .text-primary {
+        color: #6366f1 !important;
+    }
+    
+    .professional-modal .text-success {
+        color: #10b981 !important;
+    }
+    
+    .professional-modal .text-info {
+        color: #06b6d4 !important;
+    }
+    
+    .professional-modal .text-warning {
+        color: #f59e0b !important;
+    }
+    
+    .professional-modal .text-danger {
+        color: #ef4444 !important;
+    }
+    
+    /* Ensure all headings are white */
+    .professional-modal h1,
+    .professional-modal h2,
+    .professional-modal h3,
+    .professional-modal h4,
+    .professional-modal h5,
+    .professional-modal h6 {
+        color: white !important;
+    }
+    
+    /* Ensure all paragraphs and spans are white */
+    .professional-modal p,
+    .professional-modal span,
+    .professional-modal div {
+        color: white !important;
+    }
+    
+    /* Specific overrides for job description content */
+    .professional-modal #modalJobTitle {
+        color: white !important;
+    }
+    
+    .professional-modal #modalJobCompany {
+        color: white !important;
+    }
+    
+    .professional-modal #modalJobLocation {
+        color: white !important;
+    }
+    
+    .professional-modal #modalJobDescription {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+    
+    .professional-modal #modalJobDescription * {
+        color: rgba(255, 255, 255, 0.9) !important;
     }
 </style>
 {% endblock %}
