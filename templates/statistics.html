@@ -4,445 +4,567 @@
 
 {% block extra_head %}
 <style>
+    /* Modern Gradient Background & Glassmorphism Variables */
     :root {
-        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        --warning-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-        --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        /* Gradient Colors */
+        --gradient-purple: #6157FF;
+        --gradient-violet: #8A6FFF; 
+        --gradient-pink: #FF6584;
+        --gradient-blue: #4B6FFF;
         
-        --glass-bg: rgba(255, 255, 255, 0.1);
-        --glass-border: rgba(255, 255, 255, 0.2);
-        --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
-        --shadow-medium: 0 12px 48px rgba(0, 0, 0, 0.15);
-        --shadow-heavy: 0 20px 64px rgba(0, 0, 0, 0.2);
+        /* Enhanced Glassmorphism - Aligned with index.html */
+        --glass-bg: rgba(255, 255, 255, 0.20); /* Slightly more transparent for cards */
+        --glass-bg-header: rgba(255, 255, 255, 0.25); /* For main header, slightly more opaque */
+        --glass-border: rgba(255, 255, 255, 0.18);
+        --glass-backdrop: blur(18px);
+        --glass-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Softer shadow for cards */
+        --header-shadow: 0 15px 30px rgba(0,0,0,0.2); /* Stronger for main header */
         
-        --border-radius: 16px;
-        --border-radius-sm: 8px;
-        --border-radius-lg: 24px;
+        /* Text Colors - Enhanced Visibility */
+        --text-light: white;
+        --text-medium: rgba(255, 255, 255, 0.9);
+        --text-dim: rgba(255, 255, 255, 0.75);
         
-        --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        --transition-fast: all 0.2s ease-out;
+        /* Accent Colors */
+        --accent-blue: #4B6FFF;
+        --accent-green: #2ECC71;
+        --accent-red: #FF6584;
+        --accent-yellow: #F9C74F;
+        
+        /* Shadows (kept for reference, glass-shadow used primarily) */
+        --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 8px 15px rgba(0, 0, 0, 0.15);
+        --shadow-lg: 0 15px 30px rgba(0, 0, 0, 0.2);
+        
+        /* Border Radius */
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --radius-full: 9999px;
+        
+        /* Animations */
+        --transition-fast: 0.2s ease;
+        --transition-normal: 0.3s ease;
     }
-
+    
+    /* Main Background - Matching homepage gradient */
     body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 75%, #f5576c 100%);
+        background: linear-gradient(135deg, #4d4ac7 0%, #965ceb 40%, #ff6c92 100%);
         background-attachment: fixed;
-        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        color: var(--text-light);
+        min-height: 100vh;
         overflow-x: hidden;
-    }
-
-    /* Professional Header */
-    .professional-header {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: var(--border-radius-lg);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-        box-shadow: var(--shadow-medium);
-    }
-
-    .professional-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        animation: rotate 20s linear infinite;
-        z-index: -1;
-    }
-
-    @keyframes rotate {
-        to { transform: rotate(360deg); }
-    }
-
-    .professional-header h1 {
-        background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 700;
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .professional-header p {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 1.1rem;
         margin: 0;
-    }
-
-    /* Professional Stats Cards */
-    .professional-stats-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: var(--border-radius);
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow-medium);
-        transition: var(--transition-smooth);
+        padding: 0;
         position: relative;
-        overflow: hidden;
     }
-
-    .professional-stats-card::before {
-        content: '';
-        position: absolute;
+    
+    /* Particles Container */
+    #particles-js {
+        position: fixed;
+        width: 100%;
+        height: 100%;
         top: 0;
         left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--primary-gradient);
-        transform: scaleX(0);
-        transition: var(--transition-smooth);
-        transform-origin: left;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.3; /* Subtle particles */
     }
-
-    .professional-stats-card:hover::before {
-        transform: scaleX(1);
+    
+    /* Content positioning - Transparent to show body gradient */
+    .content-wrapper {
+        position: relative;
+        z-index: 1;
+        background: transparent; /* Ensure body gradient shows through */
+        padding-top: 2rem; 
+        padding-bottom: 2rem;
     }
-
-    .professional-stats-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-heavy);
+    
+    /* Dashboard Header - Glassmorphic */
+    .dashboard-header {
+        background: var(--glass-bg-header) !important;
+        backdrop-filter: var(--glass-backdrop) !important;
+        -webkit-backdrop-filter: var(--glass-backdrop) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: 2rem !important;
+        margin-bottom: 2rem !important;
+        text-align: center !important;
+        box-shadow: var(--header-shadow) !important;
+        animation: float 6s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
     }
-
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 800;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        line-height: 1;
+    
+    .dashboard-header h1 {
+        font-weight: 700;
+        font-size: 2.25rem;
         margin-bottom: 0.5rem;
+        color: var(--text-light);
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .dashboard-header p {
+        color: var(--text-medium);
+        font-size: 1.1rem;
+        font-weight: 400;
+        margin: 0;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        position: relative;
+        z-index: 2;
+    }
+    
+    /* Stats Cards, Chart Cards, Metric Cards - Unified Glassmorphic Style */
+    .stats-card,
+    .chart-card,
+    .metric-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: var(--glass-backdrop) !important;
+        -webkit-backdrop-filter: var(--glass-backdrop) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: 1.5rem !important;
+        height: 100% !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: var(--glass-shadow) !important;
+        position: relative;
+        overflow: hidden;
+        color: var(--text-light);
     }
 
-    .stat-label {
-        color: #6c757d;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-size: 0.9rem;
+    .stats-card:hover,
+    .chart-card:hover,
+    .metric-card:hover {
+        transform: translateY(-8px) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important; /* Enhanced hover shadow */
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: rgba(255,255,255,0.25) !important; /* Slightly lighter on hover */
     }
-
-    .stat-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
+    
+    /* Specifics for stats-card */
+    .stats-card .stats-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: var(--radius-full);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+        margin-right: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .stats-card .stats-icon i {
         color: white;
-        margin-bottom: 1rem;
-        box-shadow: var(--shadow-light);
     }
-
-    .stat-icon.total { background: var(--primary-gradient); }
-    .stat-icon.applied { background: var(--success-gradient); }
-    .stat-icon.interview { background: var(--success-gradient); }
-    .stat-icon.recent { background: var(--warning-gradient); }
-
-    /* Professional Charts */
-    .professional-chart-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-medium);
-        overflow: hidden;
-        transition: var(--transition-smooth);
-    }
-
-    .professional-chart-card:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-heavy);
-    }
-
-    .professional-chart-header {
-        background: var(--primary-gradient);
-        color: white;
-        padding: 1.5rem;
-        border: none;
-    }
-
-    .professional-chart-header h6 {
-        margin: 0;
+    
+    .stats-number {
+        font-size: 2.5rem;
         font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+        color: var(--text-light);
+        text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    
+    .stats-label {
+        color: var(--text-medium);
+        font-size: 0.875rem;
+        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.05em;
     }
 
-    .professional-chart-body {
-        padding: 2rem;
+    /* Specifics for chart-card */
+    .chart-card {
+        margin-bottom: 1.5rem !important; 
+        animation: float 6s ease-in-out infinite; /* Retain float for chart cards specifically if desired */
     }
 
-    /* Professional List Items */
-    .professional-list-item {
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(102, 126, 234, 0.2);
-        border-radius: var(--border-radius-sm);
-        margin-bottom: 0.75rem;
+    .chart-header {
+        background: rgba(255, 255, 255, 0.1); /* Subtle glass header */
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
         padding: 1rem 1.5rem;
-        transition: var(--transition-smooth);
+        border-bottom: 1px solid var(--glass-border);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .chart-header h6 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    .chart-header h6 i {
+        margin-right: 0.5rem;
+    }
+    
+    .chart-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        color: var(--text-medium); /* Ensure chart body text is light */
+    }
+    
+    /* List Items - Glassmorphic */
+    .data-list-item {
+        background: rgba(255, 255, 255, 0.08); /* Subtle glass for list items */
+        backdrop-filter: blur(5px); /* Less blur for nested items */
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        color: var(--text-medium);
     }
-
-    .professional-list-item:hover {
-        background: rgba(102, 126, 234, 0.1);
-        border-color: #667eea;
+    
+    .data-list-item:hover {
+        background: rgba(255, 255, 255, 0.15);
         transform: translateX(5px);
+        border-color: rgba(255,255,255,0.25);
     }
-
-    .professional-badge {
-        background: var(--primary-gradient);
+    
+    .data-badge {
+        background: var(--accent-blue);
         color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        font-size: 0.9rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.85rem;
         font-weight: 600;
-        box-shadow: var(--shadow-light);
+        border: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
-
-    /* Professional Tables */
-    .professional-table {
-        background: rgba(255, 255, 255, 0.9);
+    
+    /* Tables - Glassmorphic */
+    .stats-table {
+        width: 100%;
+        color: var(--text-light);
+    }
+    
+    .stats-table th {
+        background: rgba(255, 255, 255, 0.15); /* Glass header for table */
         backdrop-filter: blur(10px);
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--shadow-light);
-    }
-
-    .professional-table th {
-        background: var(--primary-gradient);
-        color: white;
+        -webkit-backdrop-filter: blur(10px);
+        padding: 1rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        padding: 1rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
         border: none;
-        font-size: 0.85rem;
+        color: var(--text-light);
     }
-
-    .professional-table td {
+    
+    .stats-table td {
         padding: 1rem;
-        border: none;
-        background: rgba(255, 255, 255, 0.8);
-        transition: var(--transition-fast);
+        border: none; /* Keep borderless for cleaner look */
+        border-bottom: 1px solid var(--glass-border); /* Subtle separator */
+        background: transparent; /* Let card background show */
+        color: var(--text-medium);
     }
-
-    .professional-table tr:hover td {
-        background: rgba(102, 126, 234, 0.1);
+    .stats-table tr:last-child td {
+        border-bottom: none;
     }
-
-    /* Professional Metrics */
-    .professional-metrics-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: var(--border-radius);
-        padding: 2rem;
-        box-shadow: var(--shadow-medium);
-        text-align: center;
-        transition: var(--transition-smooth);
+    
+    .stats-table tr:hover td {
+        background: rgba(255, 255, 255, 0.05);
     }
-
-    .professional-metrics-card:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-heavy);
+    
+    /* Specifics for metric-card */
+    .metric-card {
+        text-align: center !important;
+        animation: float 6s ease-in-out infinite;
+        animation-delay: 0.2s; /* Retain specific animation if needed */
     }
 
     .metric-value {
         font-size: 2.5rem;
-        font-weight: 800;
+        font-weight: 700;
         line-height: 1;
         margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.25);
     }
-
-    .metric-value.primary { 
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .metric-value.success { 
-        background: var(--success-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .metric-value.info { 
-        background: var(--success-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .metric-value.warning { 
-        background: var(--warning-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
+    
+    .metric-value.primary { color: var(--accent-blue); }
+    .metric-value.success { color: var(--accent-green); }
+    .metric-value.info { color: #3498DB; } /* Kept specific info color */
+    .metric-value.warning { color: var(--accent-yellow); }
+    
     .metric-label {
-        color: #6c757d;
+        color: var(--text-medium);
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
         font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Back button - Glassmorphic */
+    .btn-back {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        color: var(--text-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-full);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        animation: pulse 2s infinite;
+    }
+    
+    .btn-back:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        color: white;
+        border-color: rgba(255,255,255,0.3);
+    }
+    
+    /* Status Badge styling - Glassmorphic with accent color hints */
+    .status-badge {
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: var(--radius-full);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .bg-new { background: rgba(75, 111, 255, 0.5); border-left: 3px solid var(--accent-blue); }
+    .bg-interested { background: rgba(249, 199, 79, 0.5); border-left: 3px solid var(--accent-yellow); }
+    .bg-applied { background: rgba(46, 204, 113, 0.5); border-left: 3px solid var(--accent-green); }
+    .bg-interview { background: rgba(155, 89, 182, 0.5); border-left: 3px solid var(--gradient-violet); }
+    .bg-rejected { background: rgba(255, 101, 132, 0.5); border-left: 3px solid var(--accent-red); }
+    
+    /* Enhanced text styling */
+    .text-muted {
+        color: var(--text-dim) !important;
+    }
+    
+    small.text-muted {
+        color: var(--text-dim) !important;
+        font-weight: 400;
+    }
+    
+    .text-info { color: var(--accent-blue) !important; }
+    .text-danger { color: var(--accent-red) !important; }
+    
+    /* No data states */
+    .text-center.text-muted i {
+        color: rgba(255,255,255,0.5) !important;
     }
 
-    /* Responsive Design */
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+    @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); } 50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.2); } 100% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); } }
+    
+    .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    .float { animation: float 6s ease-in-out infinite; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .float-1 { animation-duration: 5s; }
+    .float-2 { animation-duration: 6s; animation-delay: 0.2s; }
+    .float-3 { animation-duration: 7s; animation-delay: 0.4s; }
+    
+    /* Chart styling enhancements */
+    canvas {
+        margin: 0 auto;
+        max-width: 100%;
+    }
+    
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-        .professional-header h1 {
-            font-size: 2rem;
-        }
-        
-        .professional-header {
-            padding: 1.5rem;
-        }
-        
-        .professional-stats-card {
-            margin-bottom: 1rem;
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-        }
+        .dashboard-header h1 { font-size: 1.75rem; }
+        .stats-number { font-size: 2rem; }
+        .metric-value { font-size: 2rem; }
+        .chart-body { padding: 1rem; }
+        .stats-card .stats-icon { margin-bottom: 0.5rem; margin-right: 0; }
+        .stats-card .d-flex { flex-direction: column; align-items: center; text-align:center;}
+        .stats-card > div > div:last-child { text-align: center; margin-top: 0.5rem; }
     }
-
-    /* Animation Classes */
-    .fade-in {
-        animation: fadeIn 0.6s ease-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .slide-up {
-        animation: slideUp 0.6s ease-out;
-    }
-
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
+    @media (max-width: 576px) {
+        .chart-header h6 { font-size: 0.9rem; }
+        .data-list-item { flex-direction: column; align-items: flex-start; }
+        .data-list-item .data-badge { margin-top: 0.5rem; align-self: flex-end; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Professional Header -->
-<div class="professional-header text-center">
-    <h1>
-        <i class="fas fa-chart-line me-3"></i>
-        Analytics Dashboard
-    </h1>
-    <p>Comprehensive insights into your job search performance and opportunities</p>
-</div>
+<!-- Particles Background -->
+<div id="particles-js"></div>
 
-<div class="container-fluid">
+<!-- Dashboard Content -->
+<div class="content-wrapper container-fluid px-md-4 py-4">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header fade-in">
+        <h1>
+            <i class="fas fa-chart-line me-2"></i>
+            Analytics Dashboard
+        </h1>
+        <p>Comprehensive insights into your job search performance and opportunities</p>
+    </div>
+
     <!-- Overview Stats Cards -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="professional-stats-card fade-in">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card fade-in delay-1 float float-1">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon total">
+                    <div class="stats-icon icon-opportunities">
                         <i class="fas fa-briefcase"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="stat-number">{{ stats.total_jobs }}</div>
-                        <div class="stat-label">Total Opportunities</div>
+                    <div>
+                        <div class="stats-number">{{ stats.total_jobs }}</div>
+                        <div class="stats-label">Total Opportunities</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="professional-stats-card fade-in">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card fade-in delay-2 float float-2">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon applied">
+                    <div class="stats-icon icon-applications">
                         <i class="fas fa-paper-plane"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="stat-number">{{ stats.by_status.get('applied', 0) }}</div>
-                        <div class="stat-label">Applications Sent</div>
+                    <div>
+                        <div class="stats-number">{{ stats.by_status.get('applied', 0) }}</div>
+                        <div class="stats-label">Applications Sent</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="professional-stats-card fade-in">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card fade-in delay-3 float float-3">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon interview">
+                    <div class="stats-icon icon-interviews">
                         <i class="fas fa-handshake"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="stat-number">{{ stats.by_status.get('interview', 0) }}</div>
-                        <div class="stat-label">Interviews Scheduled</div>
+                    <div>
+                        <div class="stats-number">{{ stats.by_status.get('interview', 0) }}</div>
+                        <div class="stats-label">Interviews Scheduled</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="professional-stats-card fade-in">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stats-card fade-in delay-4 float float-1">
                 <div class="d-flex align-items-center">
-                    <div class="stat-icon recent">
+                    <div class="stats-icon icon-discoveries">
                         <i class="fas fa-calendar-week"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="stat-number">{{ stats.recent_jobs }}</div>
-                        <div class="stat-label">Recent Discoveries</div>
+                    <div>
+                        <div class="stats-number">{{ stats.recent_jobs }}</div>
+                        <div class="stats-label">Recent Discoveries</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Row -->
+    <!-- Reorganized Charts and Detailed Analysis Row -->
     <div class="row mb-4">
-        <!-- Status Distribution -->
-        <div class="col-lg-6 mb-4">
-            <div class="professional-chart-card slide-up">
-                <div class="professional-chart-header">
-                    <h6><i class="fas fa-pie-chart me-2"></i>Application Status Distribution</h6>
+        <!-- Status Distribution Chart -->
+        <div class="col-lg-7 mb-4">
+            <div class="chart-card fade-in delay-1 float float-2" style="height: auto;">
+                <div class="chart-header">
+                    <h6><i class="fas fa-chart-pie me-2"></i>Application Status Distribution</h6>
                 </div>
-                <div class="professional-chart-body">
-                    <canvas id="statusChart" width="100" height="50"></canvas>
+                <div class="chart-body" style="min-height: 350px;">
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Top Companies -->
+        <!-- Detailed Status Analysis Table -->
+        <div class="col-lg-5 mb-4">
+            <div class="chart-card fade-in delay-2 float float-1" style="height: auto;">
+                <div class="chart-header">
+                    <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
+                </div>
+                <div class="chart-body">
+                    {% if stats.by_status %}
+                    <table class="stats-table table-borderless mb-0">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th class="text-center">Count</th>
+                                <th class="text-center">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for status, count in stats.by_status.items() %}
+                            <tr>
+                                <td>
+                                    <span class="status-badge {{ 'bg-applied' if status == 'applied' else 'bg-new' if status == 'new' else 'bg-interested' if status == 'interested' else 'bg-interview' if status == 'interview' else 'bg-rejected' }}">
+                                        {{ status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td class="text-center fw-bold">{{ count }}</td>
+                                <td class="text-center">
+                                    <span>
+                                        {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                            <p>No status data available yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Companies and Locations Row -->
+    <div class="row mb-4">
+        <!-- Top Target Companies -->
         <div class="col-lg-6 mb-4">
-            <div class="professional-chart-card slide-up">
-                <div class="professional-chart-header">
+            <div class="chart-card fade-in delay-1 float float-3">
+                <div class="chart-header">
                     <h6><i class="fas fa-building me-2"></i>Top Target Companies</h6>
                 </div>
-                <div class="professional-chart-body">
+                <div class="chart-body">
                     {% if stats.top_companies %}
                         {% for company, count in (stats.top_companies.items() | list)[:10] %}
-                        <div class="professional-list-item">
+                        <div class="data-list-item">
                             <div class="d-flex align-items-center flex-grow-1">
-                                <i class="fas fa-building me-3 text-primary"></i>
-                                <span class="fw-semibold">{{ company }}</span>
+                                <i class="fas fa-building me-3 text-info"></i>
+                                <span style="color: var(--text-medium);">{{ company }}</span>
                             </div>
-                            <div class="professional-badge">{{ count }}</div>
+                            <div class="data-badge">{{ count }}</div>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -454,71 +576,22 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Detailed Analysis Row -->
-    <div class="row mb-4">
-        <!-- Status Breakdown -->
-        <div class="col-lg-6 mb-4">
-            <div class="professional-chart-card slide-up">
-                <div class="professional-chart-header">
-                    <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
-                </div>
-                <div class="professional-chart-body">
-                    {% if stats.by_status %}
-                    <div class="professional-table">
-                        <table class="table table-borderless mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th class="text-center">Count</th>
-                                    <th class="text-center">Percentage</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for status, count in stats.by_status.items() %}
-                                <tr>
-                                    <td>
-                                        <span class="badge {{ 'bg-success' if status == 'applied' else 'bg-secondary' if status == 'new' else 'bg-warning' if status == 'interested' else 'bg-info' if status == 'interview' else 'bg-danger' }} me-2">
-                                            {{ status.replace('_', ' ').title() }}
-                                        </span>
-                                    </td>
-                                    <td class="text-center fw-bold">{{ count }}</td>
-                                    <td class="text-center">
-                                        <span class="fw-semibold text-primary">
-                                            {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-chart-bar fa-3x mb-3 opacity-50"></i>
-                            <p>No status data available yet</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
 
         <!-- Top Locations -->
         <div class="col-lg-6 mb-4">
-            <div class="professional-chart-card slide-up">
-                <div class="professional-chart-header">
+            <div class="chart-card fade-in delay-2 float float-2">
+                <div class="chart-header">
                     <h6><i class="fas fa-map-marker-alt me-2"></i>Geographic Opportunities</h6>
                 </div>
-                <div class="professional-chart-body">
+                <div class="chart-body">
                     {% if stats.top_locations %}
                         {% for location, count in (stats.top_locations.items() | list)[:10] %}
-                        <div class="professional-list-item">
+                        <div class="data-list-item">
                             <div class="d-flex align-items-center flex-grow-1">
                                 <i class="fas fa-map-marker-alt me-3 text-danger"></i>
-                                <span class="fw-semibold">{{ location }}</span>
+                                <span style="color: var(--text-medium);">{{ location }}</span>
                             </div>
-                            <div class="professional-badge">{{ count }}</div>
+                            <div class="data-badge">{{ count }}</div>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -534,16 +607,16 @@
 
     <!-- Success Metrics -->
     {% if stats.total_jobs > 0 %}
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="professional-chart-card slide-up">
-                <div class="professional-chart-header">
+            <div class="chart-card fade-in delay-1">
+                <div class="chart-header">
                     <h6><i class="fas fa-trophy me-2"></i>Success Rate Metrics</h6>
                 </div>
-                <div class="professional-chart-body">
+                <div class="chart-body">
                     <div class="row text-center">
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="professional-metrics-card">
+                        <div class="col-md-3 col-6 mb-4">
+                            <div class="metric-card float float-1">
                                 <div class="metric-value primary">
                                     {{ "%.1f"|format((stats.by_status.get('applied', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
@@ -551,8 +624,8 @@
                                 <small class="text-muted">Jobs applied to</small>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="professional-metrics-card">
+                        <div class="col-md-3 col-6 mb-4">
+                            <div class="metric-card float float-2">
                                 <div class="metric-value success">
                                     {{ "%.1f"|format((stats.by_status.get('interview', 0) / stats.by_status.get('applied', 1) * 100) if stats.by_status.get('applied', 0) > 0 else 0) }}%
                                 </div>
@@ -560,8 +633,8 @@
                                 <small class="text-muted">From applications</small>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="professional-metrics-card">
+                        <div class="col-md-3 col-6 mb-4">
+                            <div class="metric-card float float-3">
                                 <div class="metric-value info">
                                     {{ "%.1f"|format((stats.by_status.get('interested', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
@@ -569,8 +642,8 @@
                                 <small class="text-muted">Jobs of interest</small>
                             </div>
                         </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <div class="professional-metrics-card">
+                        <div class="col-md-3 col-6 mb-4">
+                            <div class="metric-card float float-1">
                                 <div class="metric-value warning">
                                     {{ "%.1f"|format((stats.by_status.get('rejected', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
                                 </div>
@@ -586,97 +659,194 @@
     {% endif %}
 
     <!-- Back to Dashboard -->
-    <div class="text-center mt-4 mb-4">
-        <a href="{{ url_for('index') }}" class="btn btn-lg" style="background: var(--primary-gradient); color: white; border-radius: 50px; padding: 1rem 2rem; font-weight: 600; box-shadow: var(--shadow-light); transition: var(--transition-smooth);">
+    <div class="text-center mt-4 mb-5">
+        <a href="{{ url_for('index') }}" class="btn-back">
             <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
         </a>
     </div>
 </div>
+
+<!-- Chart Data - Hidden -->
+<script type="application/json" id="chartData">
+    {
+        "statusLabels": [{% for status in stats.by_status.keys() %}"{{ status.replace('_', ' ').title() }}"{% if not loop.last %},{% endif %}{% endfor %}],
+        "statusValues": [{% for count in stats.by_status.values() %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}]
+    }
+</script>
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- Particles.js -->
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Professional Chart Configuration
-const chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'bottom',
-            labels: {
-                usePointStyle: true,
-                padding: 20,
-                font: {
-                    family: 'Inter, sans-serif',
-                    size: 12,
-                    weight: '600'
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize particles.js
+    particlesJS('particles-js', {
+        "particles": {
+            "number": {
+                "value": 80, /* Increased for more connection points */
+                "density": {
+                    "enable": true,
+                    "value_area": 800
+                }
+            },
+            "color": {
+                "value": "#ffffff"
+            },
+            "shape": {
+                "type": "circle",
+            },
+            "opacity": {
+                "value": 0.3, /* Dots are subtle */
+                "random": true,
+                "anim": {
+                    "enable": true,
+                    "speed": 0.5, /* Slower fade */
+                    "opacity_min": 0.05,
+                    "sync": false
+                }
+            },
+            "size": {
+                "value": 2, /* Smaller dots */
+                "random": true,
+            },
+            "line_linked": {
+                "enable": true,
+                "distance": 150, /* Standard distance for linking */
+                "color": "#ffffff",
+                "opacity": 0.45, /* Increased visibility */
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 0.8, /* Slower movement for constellation feel */
+                "direction": "none",
+                "random": true,
+                "straight": false,
+                "out_mode": "out",
+                "bounce": false,
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": {
+                    "enable": true,
+                    "mode": "grab" 
+                },
+                "onclick": {
+                    "enable": false 
+                },
+                "resize": true
+            },
+            "modes": {
+                "grab": {
+                    "distance": 140,
+                    "line_linked": {
+                        "opacity": 0.55 /* Increased visibility on grab */
+                    }
+                }
+            }
+        },
+        "retina_detect": true
+    });
+
+    // Parse the JSON data that was rendered by Jinja
+    var chartDataElement = document.getElementById('chartData');
+    if (!chartDataElement) {
+        console.error("Chart data element not found!");
+        return;
+    }
+    var chartData = JSON.parse(chartDataElement.textContent);
+    
+    // Create chart configuration with vibrant, semi-transparent colors
+    var chartConfig = {
+        type: 'doughnut',
+        data: {
+            labels: chartData.statusLabels,
+            datasets: [{
+                data: chartData.statusValues,
+                backgroundColor: [
+                    'rgba(75, 111, 255, 0.7)',   /* Accent Blue */
+                    'rgba(46, 204, 113, 0.7)',   /* Accent Green */
+                    'rgba(155, 89, 182, 0.7)',  /* Violet */
+                    'rgba(249, 199, 79, 0.7)',   /* Accent Yellow */
+                    'rgba(255, 101, 132, 0.7)',  /* Accent Red */
+                    'rgba(52, 152, 219, 0.7)'   /* Info Blue */
+                ],
+                borderColor: 'rgba(255,255,255,0.1)', // Subtle border for segments
+                borderWidth: 1,
+                hoverOffset: 12,
+                hoverBorderColor: 'rgba(255,255,255,0.5)',
+                hoverBorderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: 'var(--text-medium)', // Use CSS variable for text color
+                        font: {
+                            family: 'Inter, sans-serif',
+                            size: 12,
+                            weight: '500'
+                        },
+                        padding: 20,
+                        usePointStyle: true,
+                        boxWidth: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    titleFont: { size: 14, weight: 'bold', family: 'Inter, sans-serif' },
+                    bodyFont: { size: 12, family: 'Inter, sans-serif' },
+                    padding: 10,
+                    cornerRadius: 'var(--radius-sm)', // CSS variable for consistency
+                    displayColors: true,
+                    boxPadding: 4
                 }
             }
         }
+    };
+
+    // Create chart
+    var statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+      new Chart(statusCtx.getContext('2d'), chartConfig);
+    } else {
+      console.error("Status chart canvas element not found!");
     }
-};
 
-// Status Distribution Chart
-const statusData = {
-    labels: [
-        {% for status in stats.by_status.keys() %}
-        '{{ status.replace("_", " ").title() }}'{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ],
-    datasets: [{
-        data: [
-            {% for count in stats.by_status.values() %}
-            {{ count }}{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ],
-        backgroundColor: [
-            '#667eea',
-            '#764ba2', 
-            '#f093fb',
-            '#f5576c',
-            '#4facfe',
-            '#00f2fe'
-        ],
-        borderWidth: 0,
-        hoverOffset: 10
-    }]
-};
+    // Animation observer setup
+    var observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
 
-const statusCtx = document.getElementById('statusChart').getContext('2d');
-new Chart(statusCtx, {
-    type: 'doughnut',
-    data: statusData,
-    options: {
-        ...chartDefaults,
-        cutout: '70%',
-        plugins: {
-            ...chartDefaults.plugins,
-            legend: {
-                ...chartDefaults.plugins.legend,
-                position: 'right'
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                if (entry.target.classList.contains('fade-in')) {
+                    entry.target.style.animationPlayState = 'running';
+                    // Apply delay if specified via class
+                    if (entry.target.classList.contains('delay-1')) entry.target.style.animationDelay = '0.1s';
+                    else if (entry.target.classList.contains('delay-2')) entry.target.style.animationDelay = '0.2s';
+                    else if (entry.target.classList.contains('delay-3')) entry.target.style.animationDelay = '0.3s';
+                    else if (entry.target.classList.contains('delay-4')) entry.target.style.animationDelay = '0.4s';
+                }
             }
-        }
-    }
-});
+        });
+    }, observerOptions);
 
-// Add animation classes on scroll
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.animation = entry.target.classList.contains('fade-in') ? 
-                'fadeIn 0.6s ease-out' : 'slideUp 0.6s ease-out';
-        }
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+        el.style.animationPlayState = 'paused'; // Pause animation initially
+        observer.observe(el);
     });
-}, observerOptions);
-
-document.querySelectorAll('.fade-in, .slide-up').forEach(el => {
-    observer.observe(el);
 });
 </script>
-{% endblock %} 
+{% endblock %}
