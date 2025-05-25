@@ -874,7 +874,7 @@
     .btn-status-applied.active { background: var(--gradient-primary); }
     .btn-status-interview.active { background: var(--gradient-success); }
     .btn-status-rejected.active { background: var(--neutral-500); }
-    
+
     /* Professional Help Text */
     .help-text {
         background: rgba(6, 182, 212, 0.1);
@@ -1686,28 +1686,28 @@
     <h1 class="display-5 fw-bold mb-4">
         <i class="fas fa-rocket me-3"></i>
         AI-Powered Career Discovery Platform
-    </h1>
+        </h1>
     <p class="lead mb-5">
         Revolutionizing job search with cutting-edge AI, real-time data intelligence, and Model Context Protocol integration. 
         Your next career breakthrough is just one search away.
-    </p>
+        </p>
     <div class="d-flex justify-content-center gap-4 flex-wrap mb-4">
         <span class="mcp-badge">
             <i class="fas fa-brain"></i>
             Neural Job Matching
-        </span>
+            </span>
         <span class="mcp-badge">
             <i class="fas fa-lightning-bolt"></i>
             Real-time Discovery
-        </span>
+            </span>
         <span class="mcp-badge">
             <i class="fas fa-chart-network"></i>
             Smart Analytics
-        </span>
+            </span>
         <span class="mcp-badge">
             <i class="fas fa-shield-check"></i>
             MCP Powered
-        </span>
+            </span>
     </div>
     <div class="hero-stats mt-4">
         <div class="row justify-content-center">
@@ -1897,7 +1897,7 @@
                     <div class="col-md-12 job-card-wrapper">
                         <div class="professional-job-card status-{{ job.status|lower|replace(' ', '_') if job.status else 'new' }}" 
                              data-job-id="{{ job.job_id }}"
-                             data-job-title="{{ job.title | replace('"', '&quot;') }}"
+                             data-job-title="{{ job.job_title | replace('"', '&quot;') }}"
                              data-job-company="{{ job.company | replace('"', '&quot;') }}"
                              data-job-location="{{ job.location | replace('"', '&quot;') }}"
                              data-job-url="{{ job.url }}"
@@ -1907,7 +1907,7 @@
                                 <div>
                                     <h3 class="professional-job-title mb-1">
                                         <a href="{{ job.url }}" target="_blank" class="text-decoration-none">
-                                            {{ job.title }}
+                                            {{ job.job_title }}
                                             <i class="fas fa-external-link-alt ms-2 text-muted" style="font-size: 0.8em;"></i>
                                         </a>
                                     </h3>
@@ -2416,13 +2416,20 @@ function executeRealtimeSearch() {
 }
 
 function startStatusPolling() {
+    // Clear any existing interval
+    if (searchStatusInterval) {
+        clearInterval(searchStatusInterval);
+    }
+    
+    // Poll every 5 seconds instead of every second
     searchStatusInterval = setInterval(() => {
         fetch('/api/realtime_search/status')
         .then(response => response.json())
         .then(status => {
             updateSearchProgress(status);
             
-            if (!status.is_running) {
+            // Check if search is complete or failed
+            if (!status.is_running || status.error) {
                 clearInterval(searchStatusInterval);
                 searchStatusInterval = null;
                 
@@ -2435,55 +2442,81 @@ function startStatusPolling() {
         })
         .catch(error => {
             console.error('Error polling status:', error);
+            clearInterval(searchStatusInterval);
+            searchStatusInterval = null;
+            showSearchError('Failed to get search status: ' + error.message);
         });
-    }, 1000); // Poll every second
+    }, 5000); // Poll every 5 seconds
 }
 
 function updateSearchProgress(status) {
-    // Update progress bar
-    document.getElementById('progressBar').style.width = status.progress + '%';
-    document.getElementById('currentPhase').textContent = status.current_phase;
+    // Update progress bar with proper error handling
+    const progressBar = document.getElementById('progressBar');
+    const currentPhase = document.getElementById('currentPhase');
     
-    // Update stats if available
-    if (status.results && Object.keys(status.results).length > 0) {
-        document.getElementById('searchStats').style.display = 'block';
-        document.getElementById('urlsFound').textContent = status.results.urls_discovered || 0;
-        document.getElementById('jobsExtracted').textContent = status.results.jobs_extracted || 0;
-        document.getElementById('jobsFiltered').textContent = status.results.jobs_filtered || 0;
-        document.getElementById('jobsStored').textContent = status.results.jobs_stored || 0;
+    if (progressBar && currentPhase) {
+        progressBar.style.width = (status.progress || 0) + '%';
+        currentPhase.textContent = status.current_phase || 'Processing...';
+        
+        // Update stats if available
+        if (status.results && Object.keys(status.results).length > 0) {
+            const stats = document.getElementById('searchStats');
+            if (stats) {
+                stats.style.display = 'block';
+                document.getElementById('urlsFound').textContent = status.results.urls_discovered || 0;
+                document.getElementById('jobsExtracted').textContent = status.results.jobs_extracted || 0;
+                document.getElementById('jobsFiltered').textContent = status.results.jobs_filtered || 0;
+                document.getElementById('jobsStored').textContent = status.results.jobs_stored || 0;
+            }
+        }
     }
 }
 
 function showSearchResults(results) {
-    document.getElementById('searchProgress').style.display = 'none';
-    document.getElementById('searchResults').style.display = 'block';
-    document.getElementById('cancelSearchBtn').style.display = 'none';
-    document.getElementById('viewNewJobsBtn').style.display = 'inline-block';
+    const progress = document.getElementById('searchProgress');
+    const resultsDiv = document.getElementById('searchResults');
+    const cancelBtn = document.getElementById('cancelSearchBtn');
+    const viewBtn = document.getElementById('viewNewJobsBtn');
     
-    // Update results summary
-    const summary = `
-        <ul class="mb-0">
-            <li><strong>${results.urls_discovered}</strong> URLs discovered</li>
-            <li><strong>${results.jobs_extracted}</strong> jobs extracted</li>
-            <li><strong>${results.jobs_filtered}</strong> jobs passed filtering</li>
-            <li><strong>${results.jobs_stored}</strong> new jobs added to database</li>
-            ${results.duplicates > 0 ? `<li><strong>${results.duplicates}</strong> duplicates skipped</li>` : ''}
-        </ul>
-    `;
-    document.getElementById('resultsSummary').innerHTML = summary;
+    if (progress) progress.style.display = 'none';
+    if (resultsDiv) resultsDiv.style.display = 'block';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (viewBtn) viewBtn.style.display = 'inline-block';
     
-    showToast('Success', `Real-time search completed! Found ${results.jobs_stored} new jobs.`, 'success');
+    // Update results summary with proper error handling
+    const summary = document.getElementById('resultsSummary');
+    if (summary && results) {
+        summary.innerHTML = `
+            <ul class="mb-0">
+                <li><strong>${results.urls_discovered || 0}</strong> URLs discovered</li>
+                <li><strong>${results.jobs_extracted || 0}</strong> jobs extracted</li>
+                <li><strong>${results.jobs_filtered || 0}</strong> jobs passed filtering</li>
+                <li><strong>${results.jobs_stored || 0}</strong> new jobs added to database</li>
+                ${results.duplicates > 0 ? `<li><strong>${results.duplicates}</strong> duplicates skipped</li>` : ''}
+            </ul>
+        `;
+    }
+    
+    showToast('Success', `Real-time search completed! Found ${results.jobs_stored || 0} new jobs.`, 'success');
 }
 
 function showSearchError(error) {
-    document.getElementById('searchProgress').style.display = 'none';
-    document.getElementById('searchError').style.display = 'block';
-    document.getElementById('cancelSearchBtn').style.display = 'none';
-    document.getElementById('startSearchBtn').style.display = 'inline-block';
+    const progress = document.getElementById('searchProgress');
+    const errorDiv = document.getElementById('searchError');
+    const cancelBtn = document.getElementById('cancelSearchBtn');
+    const startBtn = document.getElementById('startSearchBtn');
     
-    document.getElementById('errorMessage').textContent = error;
+    if (progress) progress.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'block';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'inline-block';
     
-    showToast('Error', 'Real-time search failed: ' + error, 'error');
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = error || 'An unknown error occurred';
+    }
+    
+    showToast('Error', 'Real-time search failed: ' + (error || 'Unknown error'), 'error');
 }
 
 function cancelRealtimeSearch() {

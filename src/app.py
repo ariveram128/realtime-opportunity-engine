@@ -14,13 +14,18 @@ import traceback
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory
 from typing import Dict, Optional
+import requests
+
+# Import our components
+from .linkedin_scraper_handler import LinkedInScraperHandler
+from .database_manager import DatabaseManager
+from .job_filter import JobFilter
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Local imports
-from .database_manager import DatabaseManager
 from config import WEB_CONFIG
 
 # Try to import MCP handler (may not be available in all environments)
@@ -326,7 +331,7 @@ def api_realtime_search():
         realtime_search_status.update({
             'is_running': True,
             'progress': 0,
-            'current_phase': 'Initializing...',
+            'current_phase': 'Initializing search...',
             'results': {},
             'error': None,
             'started_at': datetime.now().isoformat(),
@@ -352,6 +357,7 @@ def api_realtime_search():
     except Exception as e:
         logger.error(f"Error starting real-time search: {e}")
         realtime_search_status['is_running'] = False
+        realtime_search_status['error'] = str(e)
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -376,438 +382,128 @@ def api_realtime_search_cancel():
 
 
 def run_realtime_search(search_term, max_results):
-    """
-    Run the real-time search in a background thread
-    Now uses LinkedIn scrapers for better reliability
-    """
+    """Run the real-time search process"""
     global realtime_search_status
     
     try:
-        # Import our new LinkedIn scraper and other components
-        from .linkedin_scraper_handler import LinkedInScraperHandler
-        from .job_filter import JobFilter
-        
-        # Phase 1: LinkedIn Job Discovery
-        realtime_search_status['current_phase'] = 'Discovering LinkedIn jobs...'
-        realtime_search_status['progress'] = 10
+        # Update status for LinkedIn scraping
+        realtime_search_status['current_phase'] = 'Initializing LinkedIn Scraper...'
+        realtime_search_status['progress'] = 5
         
         # Initialize LinkedIn scraper
-        linkedin_scraper = LinkedInScraperHandler()
+        linkedin_scraper = LinkedInScraperHandler() # Ensure this is correctly initialized
         
-        # Search for jobs using LinkedIn scraper with custom progress monitoring
+        # Start LinkedIn job discovery
+        realtime_search_status['current_phase'] = f'Discovering jobs for: \'{search_term}\'...'
+        realtime_search_status['progress'] = 10
         logger.info(f"🔍 Using LinkedIn scraper for: '{search_term}'")
         
-        # Apply rate limiting
-        linkedin_scraper._rate_limit()
+        discovery_result = linkedin_scraper.discover_jobs_by_keyword(search_term, max_results=max_results)
         
-        # Prepare request payload for LinkedIn keyword discovery
-        payload = [
-            {
-                "keyword": search_term,
-                "location": "United States",
-                "country": "US",
-            }
-        ]
+        if not discovery_result or not discovery_result.get('success'):
+            error_msg = discovery_result.get('error', "Failed to start LinkedIn job discovery")
+            logger.error(f"❌ LinkedIn discovery initiation failed: {error_msg}")
+            raise Exception(f"LinkedIn discovery initiation failed: {error_msg}")
         
-        # Query parameters for discovery scraper
-        params = {
-            "dataset_id": "gd_lpfll7v5hcqtkxl6l",
-            "type": "discover_new",
-            "discover_by": "keyword",
-            "limit_per_input": max_results,
-            "format": "json",
-            "uncompressed_webhook": True,
-            "include_errors": True
-        }
-        
-        # Make the LinkedIn request
-        logger.info(f"📡 Making LinkedIn discovery request...")
-        response = linkedin_scraper.session.post(
-            linkedin_scraper.api_endpoint,
-            json=payload,
-            params=params,
-            timeout=linkedin_scraper.timeout
-        )
-        response.raise_for_status()
-        response_data = response.json()
-        
-        if not response_data.get('snapshot_id'):
-            realtime_search_status['error'] = f"LinkedIn discovery failed: No snapshot ID returned"
-            realtime_search_status['is_running'] = False
-            realtime_search_status['completed_at'] = datetime.now().isoformat()
-            linkedin_scraper.close()
-            return
-        
-        snapshot_id = response_data.get('snapshot_id')
-        logger.info(f"📊 LinkedIn job discovery initiated, snapshot ID: {snapshot_id}")
-        
-        # Custom progress monitoring with web interface updates
-        start_time = time.time()
-        max_wait_time = 600  # 10 minutes instead of 5
-        check_interval = 5   # Check every 5 seconds instead of 10
-        consecutive_errors = 0
-        max_consecutive_errors = 3
-        
-        status_url = f"https://api.brightdata.com/datasets/v3/progress/{snapshot_id}"
-        download_url = f"https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}?format=json"
-        
-        logger.info(f"⏳ Waiting for LinkedIn scraping to complete (max {max_wait_time}s)...")
-        
-        job_data = None
-        last_progress = 0
-        progress_stall_count = 0
-        max_stall_count = 12  # 60 seconds of no progress (12 * 5 second intervals)
-        
-        while time.time() - start_time < max_wait_time:
-            if not realtime_search_status['is_running']:  # Check for cancellation
-                logger.info("🛑 Search cancelled by user")
-                linkedin_scraper.close()
-                return
-                
-            try:
-                # Check LinkedIn status
-                status_response = linkedin_scraper.session.get(status_url, timeout=30)
-                status_response.raise_for_status()
-                status_data = status_response.json()
-                
-                linkedin_status = status_data.get('status', 'unknown')
-                linkedin_progress = status_data.get('progress', 0)
-                
-                # Reset error counter on successful request
-                consecutive_errors = 0
-                
-                # Check for progress stall
-                if linkedin_progress == last_progress:
-                    progress_stall_count += 1
-                    if progress_stall_count >= max_stall_count:
-                        logger.warning(f"📊 LinkedIn progress stalled at {linkedin_progress}% for {progress_stall_count * check_interval}s")
-                        # Try to download data anyway in case it's ready
-                        try:
-                            download_response = linkedin_scraper.session.get(download_url, timeout=60)
-                            if download_response.status_code == 200:
-                                job_data = download_response.json()
-                                if isinstance(job_data, list) and len(job_data) > 0:
-                                    logger.info(f"✅ Found data despite stalled progress: {len(job_data)} jobs")
-                                    break
-                        except Exception as download_error:
-                            logger.debug(f"📊 Download attempt during stall failed: {download_error}")
-                else:
-                    progress_stall_count = 0  # Reset stall counter
-                    last_progress = linkedin_progress
-                
-                # Update our progress based on LinkedIn progress
-                # LinkedIn discovery takes 50% of total time (10% to 60%)
-                our_progress = 10 + (linkedin_progress * 0.5)
-                realtime_search_status['progress'] = min(int(our_progress), 60)
-                realtime_search_status['current_phase'] = f'LinkedIn scraping: {linkedin_status} ({linkedin_progress}%)'
-                
-                logger.info(f"📊 LinkedIn Status: {linkedin_status}, Progress: {linkedin_progress}% -> Our Progress: {our_progress:.1f}%")
-                
-                # Handle completion statuses
-                if linkedin_status == 'completed':
-                    logger.info(f"✅ LinkedIn scraping completed! Downloading results...")
-                    
-                    download_response = linkedin_scraper.session.get(download_url, timeout=60)
-                    download_response.raise_for_status()
-                    job_data = download_response.json()
-                    break
-                    
-                elif linkedin_status == 'ready':
-                    logger.info(f"📊 LinkedIn status is 'ready' - attempting to download results...")
-                    
-                    try:
-                        download_response = linkedin_scraper.session.get(download_url, timeout=60)
-                        download_response.raise_for_status()
-                        job_data = download_response.json()
-                        
-                        if isinstance(job_data, list) and len(job_data) > 0:
-                            logger.info(f"✅ Successfully downloaded {len(job_data)} job records from 'ready' status")
-                            break
-                        else:
-                            logger.info(f"📊 'Ready' status but no data yet, continuing to wait...")
-                    except Exception as e:
-                        logger.info(f"📊 'Ready' status but download not available yet: {e}")
-                        
-                elif linkedin_status == 'failed':
-                    error = status_data.get('error', 'Unknown error')
-                    logger.error(f"❌ LinkedIn scraping failed: {error}")
-                    realtime_search_status['error'] = f"LinkedIn scraping failed: {error}"
-                    realtime_search_status['is_running'] = False
-                    realtime_search_status['completed_at'] = datetime.now().isoformat()
-                    linkedin_scraper.close()
-                    return
-                
-                elif linkedin_status == 'running' and linkedin_progress == 0:
-                    # Special handling for stuck at 0% progress
-                    elapsed_time = time.time() - start_time
-                    if elapsed_time > 60:  # If stuck at 0% for more than 1 minute
-                        logger.warning(f"📊 LinkedIn stuck at 0% for {elapsed_time:.0f}s, checking if data is available...")
-                        try:
-                            download_response = linkedin_scraper.session.get(download_url, timeout=30)
-                            if download_response.status_code == 200:
-                                test_data = download_response.json()
-                                if isinstance(test_data, list) and len(test_data) > 0:
-                                    logger.info(f"✅ Found {len(test_data)} jobs despite 0% progress!")
-                                    job_data = test_data
-                                    break
-                        except Exception as test_error:
-                            logger.debug(f"📊 Test download failed: {test_error}")
-                
-                # Wait before next check
-                time.sleep(check_interval)
-                
-            except Exception as e:
-                consecutive_errors += 1
-                logger.error(f"❌ Error checking LinkedIn status (attempt {consecutive_errors}): {e}")
-                
-                if consecutive_errors >= max_consecutive_errors:
-                    logger.error(f"❌ Too many consecutive errors ({consecutive_errors}), aborting LinkedIn search")
-                    realtime_search_status['error'] = f'LinkedIn status check failed: {e}'
-                    realtime_search_status['is_running'] = False
-                    realtime_search_status['completed_at'] = datetime.now().isoformat()
-                    linkedin_scraper.close()
-                    return
-                
-                time.sleep(check_interval)
-        
-        # Check if we got data
-        if not job_data:
-            realtime_search_status['error'] = f'LinkedIn scraping timed out after {max_wait_time} seconds'
-            realtime_search_status['is_running'] = False
-            realtime_search_status['completed_at'] = datetime.now().isoformat()
-            linkedin_scraper.close()
-            return
-        
-        # Debug: Log the structure of job_data
-        logger.info(f"📊 Raw job_data type: {type(job_data)}")
-        logger.info(f"📊 Raw job_data length/content preview: {len(job_data) if isinstance(job_data, list) else str(job_data)[:200]}")
-        
-        # Validate and extract job data properly
-        actual_jobs = []
-        if isinstance(job_data, list):
-            actual_jobs = job_data
-        elif isinstance(job_data, dict):
-            # Handle case where data is wrapped in response object
-            if 'data' in job_data:
-                actual_jobs = job_data['data']
-            elif 'results' in job_data:
-                actual_jobs = job_data['results']
-            elif 'jobs' in job_data:
-                actual_jobs = job_data['jobs']
-            else:
-                # If it's a dict but not wrapped, maybe it's a single job
-                actual_jobs = [job_data]
-        else:
-            logger.error(f"❌ Unexpected job_data type: {type(job_data)}")
-            realtime_search_status['error'] = f'Unexpected data format from LinkedIn: {type(job_data)}'
-            realtime_search_status['is_running'] = False
-            realtime_search_status['completed_at'] = datetime.now().isoformat()
-            linkedin_scraper.close()
-            return
-        
-        if not isinstance(actual_jobs, list) or len(actual_jobs) == 0:
-            realtime_search_status['error'] = 'No LinkedIn jobs found for this search term'
-            realtime_search_status['is_running'] = False
-            realtime_search_status['completed_at'] = datetime.now().isoformat()
-            linkedin_scraper.close()
-            return
-        
-        total_jobs_found = len(actual_jobs)
-        logger.info(f"📊 Extracted {total_jobs_found} actual job records from LinkedIn response")
-        realtime_search_status['current_phase'] = f'Found {total_jobs_found} LinkedIn jobs'
-        realtime_search_status['progress'] = 60
-        
-        # Update results progressively
-        if 'results' not in realtime_search_status:
-            realtime_search_status['results'] = {}
-        realtime_search_status['results']['urls_discovered'] = total_jobs_found
-        realtime_search_status['results']['jobs_extracted'] = 0
-        realtime_search_status['results']['jobs_filtered'] = 0
-        realtime_search_status['results']['jobs_stored'] = 0
-        realtime_search_status['results']['duplicates'] = 0
-        
-        # Add delay to allow frontend to catch this update
-        time.sleep(2)
-        
-        # Phase 2: Convert to Standard Format
-        realtime_search_status['current_phase'] = 'Converting job data...'
-        realtime_search_status['progress'] = 75
-        
-        # Convert LinkedIn data to our standard format
-        if actual_jobs:
-            logger.info(f"📊 Converting {len(actual_jobs)} LinkedIn jobs to standard format...")
+        snapshot_id = discovery_result.get('snapshot_id')
+        if not snapshot_id:
+            logger.error("❌ No snapshot_id received from discovery.")
+            raise Exception("No snapshot_id received from LinkedIn job discovery")
             
-            try:
-                # Use the LinkedIn scraper's conversion method
-                standardized_jobs = linkedin_scraper.convert_to_standard_format(actual_jobs)
-                
-                logger.info(f"✅ Converted {len(standardized_jobs)} jobs to standard format")
-                
-                # Debug: Check structure of first converted job
-                if standardized_jobs:
-                    first_job = standardized_jobs[0]
-                    logger.debug(f"📊 First converted job type: {type(first_job)}")
-                    logger.debug(f"📊 First converted job keys: {list(first_job.keys()) if isinstance(first_job, dict) else 'Not a dict'}")
-                    logger.debug(f"📊 First converted job sample: {str(first_job)[:300]}")
-                
-                realtime_search_status['results']['urls_discovered'] = len(actual_jobs)
-                realtime_search_status['results']['jobs_extracted'] = len(standardized_jobs)
-                realtime_search_status['results']['jobs_filtered'] = 0  # Will be updated during filtering
-                realtime_search_status['results']['jobs_stored'] = 0
-                realtime_search_status['results']['duplicates'] = 0
-                
-                # Add delay to allow frontend to catch conversion update
-                time.sleep(2)
-                
-            except Exception as conversion_error:
-                logger.error(f"❌ Error converting LinkedIn data to standard format: {conversion_error}")
-                logger.debug(f"📊 Sample job data that caused error: {str(actual_jobs[0])[:500] if actual_jobs else 'No data'}")
-                realtime_search_status['error'] = f'Error converting job data: {conversion_error}'
-                realtime_search_status['is_running'] = False
-                realtime_search_status['completed_at'] = datetime.now().isoformat()
-                linkedin_scraper.close()
-                return
-            
-        else:
-            logger.warning("⚠️ No LinkedIn job data to convert")
-            standardized_jobs = []
+        logger.info(f"📊 LinkedIn job discovery initiated. Snapshot ID: {snapshot_id}")
+        realtime_search_status['current_phase'] = f'Polling for results (Snapshot ID: {snapshot_id[:10]}...). This may take a few minutes.'
+        realtime_search_status['progress'] = 20
+
+        # Wait for completion (this method internally polls)
+        # Max wait time for _wait_for_completion should be less than the overall timeout to allow for other steps.
+        # Let's set it to, for example, 8 minutes, if max_wait_time for the whole process is 10 minutes.
+        # The `_wait_for_completion` in `linkedin_scraper_handler` should handle its own timeout logic.
+        # We pass a max_wait_time to it.
+        # The `_wait_for_completion` should also update progress if possible, or we estimate it here.
+
+        # Assuming _wait_for_completion now takes a progress_callback
+        def progress_callback_for_wait(scraper_progress_data):
+            # scraper_progress_data could be a dict {'progress': percentage, 'status_message': '...'}
+            progress_percentage = scraper_progress_data.get('progress', 0)
+            status_message = scraper_progress_data.get('status_message', realtime_search_status['current_phase'])
+            # Scale BrightData progress (0-100) to fit our overall progress range (e.g., 20-80%)
+            realtime_search_status['progress'] = 20 + (progress_percentage * 0.6) 
+            realtime_search_status['current_phase'] = f'Polling: {status_message} ({progress_percentage}%)'
+            logger.info(f"⏳ LinkedIn Polling Update: {status_message} - {progress_percentage}%")
+
+        # The `_wait_for_completion` method needs to be adapted to accept such a callback,
+        # or we simply estimate progress here. For now, let's assume it does not take a callback
+        # and we will update progress more generically.
+
+        # The timeout for _wait_for_completion should be less than the global max_wait_time
+        # to allow for subsequent steps like DB storage.
+        completion_wait_timeout = 540  # 9 minutes, leaving 1 min for other ops if total is 10 min.
         
-        # Phase 3: Filtering
-        realtime_search_status['current_phase'] = f'Filtering {len(standardized_jobs)} jobs...'
-        realtime_search_status['progress'] = 85
+        logger.info(f"⏳ Waiting for job discovery completion (Snapshot ID: {snapshot_id}). Max wait: {completion_wait_timeout}s.")
         
-        # Add delay to allow frontend to catch filtering phase start
-        time.sleep(1)
+        # This is the blocking call that waits for BrightData to finish
+        # It should return the jobs list or None/raise error on failure/timeout
+        jobs = linkedin_scraper._wait_for_completion(snapshot_id, max_wait_time=completion_wait_timeout)
+
+        if jobs is None: # Indicates timeout or failure from _wait_for_completion
+            logger.error(f"❌ LinkedIn job discovery timed out or failed for snapshot ID: {snapshot_id} after {completion_wait_timeout}s.")
+            raise Exception(f"LinkedIn job discovery timed out or failed for snapshot ID: {snapshot_id}")
         
-        job_filter = JobFilter()
-        filtered_jobs = []
+        if not isinstance(jobs, list):
+            logger.error(f"❌ Unexpected result from _wait_for_completion for snapshot {snapshot_id}: {type(jobs)}")
+            raise Exception(f"Unexpected result type from job discovery: {type(jobs)}")
+
+        logger.info(f"✅ Job discovery completed. Received {len(jobs)} job items for snapshot {snapshot_id}.")
+        realtime_search_status['current_phase'] = 'Processing and storing extracted jobs...'
+        realtime_search_status['progress'] = 80
         
-        for i, job in enumerate(standardized_jobs):
-            try:
-                # Validate job data structure before filtering
-                if not isinstance(job, dict):
-                    logger.warning(f"Invalid job data type: {type(job)}, expected dict")
-                    continue
-                
-                # Debug: Log job data structure
-                logger.debug(f"Filtering job {i+1}: {job.get('job_title', 'No Title')} - Keys: {list(job.keys())}")
-                
-                # Ensure required fields exist and are strings
-                job_title = str(job.get('job_title', '')).strip()
-                description = str(job.get('description', '')).strip()
-                company = str(job.get('company', '')).strip()
-                
-                if not job_title:
-                    logger.warning(f"Skipping job {i+1}: No job title")
-                    continue
-                
-                # Create a properly formatted job dict for filtering
-                filter_job_data = {
-                    'job_title': job_title,
-                    'description': description,
-                    'company': company,
-                    'location': str(job.get('location', '')).strip(),
-                    'url': str(job.get('url', '')).strip()
-                }
-                
-                # Apply job filter - note: filter_job returns a tuple (bool, reason)
-                filter_result = job_filter.filter_job(filter_job_data)
-                is_relevant = filter_result[0] if isinstance(filter_result, tuple) else filter_result
-                
-                if is_relevant:
-                    filtered_jobs.append(job)  # Keep the original job data
-                    logger.debug(f"✅ Job {i+1} passed filter: {job_title}")
-                    # Update progress during filtering
-                    realtime_search_status['results']['jobs_filtered'] = len(filtered_jobs)
-                    
-                    # Add small delay every 5 jobs to allow frontend updates
-                    if len(filtered_jobs) % 5 == 0:
-                        time.sleep(0.5)
-                else:
-                    logger.debug(f"❌ Job {i+1} filtered out: {job_title}")
-                    
-            except Exception as e:
-                logger.error(f"Error filtering job {i+1}: {e}")
-                continue
+        # The jobs returned by _wait_for_completion should already be in a usable format.
+        # If `extract_jobs_from_snapshot` was doing further processing, that logic might need to be
+        # integrated into `_wait_for_completion` or called here if `_wait_for_completion` returns raw data.
+        # For now, assume `jobs` is the final list of job dicts.
         
-        logger.info(f"🎯 Filtered {len(filtered_jobs)} relevant jobs from {len(standardized_jobs)} total")
-        realtime_search_status['results']['jobs_extracted'] = len(standardized_jobs)
-        realtime_search_status['results']['jobs_filtered'] = len(filtered_jobs)
-        realtime_search_status['results']['jobs_stored'] = 0  # Initialize stored count
+        realtime_search_status['results'].update({
+            'urls_discovered': len(jobs), # Or a more accurate count if available
+            'jobs_extracted': len(jobs),
+            'jobs_filtered': len(jobs), # Assuming all extracted are initially kept
+            'jobs_stored': 0 # Will be updated below
+        })
         
-        # Phase 4: Storage
-        realtime_search_status['current_phase'] = f'Saving {len(filtered_jobs)} jobs to database...'
-        realtime_search_status['progress'] = 95
-        
-        # Add delay to allow frontend to catch storage phase start
-        time.sleep(1)
+        # Store jobs in database
+        realtime_search_status['current_phase'] = 'Storing jobs in database...'
+        realtime_search_status['progress'] = 90
         
         stored_count = 0
-        duplicate_count = 0
-        
-        # Initialize duplicates in results
-        realtime_search_status['results']['duplicates'] = 0
-        
-        for i, job in enumerate(filtered_jobs):
-            try:
-                # Validate job data before storage
-                if not isinstance(job, dict):
-                    logger.warning(f"Invalid job data for storage: {type(job)}")
-                    continue
-                
-                # Debug: Log storage attempt
-                logger.debug(f"Storing job {i+1}: {job.get('job_title', 'No Title')}")
-                
-                success = db.insert_job(job)
-                if success:
-                    stored_count += 1
-                    logger.debug(f"Successfully stored job: {job.get('job_title', 'No Title')}")
+        if jobs: # Ensure there are jobs to store
+            for job_detail in jobs:
+                # Ensure job_detail is a dictionary and has necessary fields
+                if isinstance(job_detail, dict):
+                    # The `db.insert_job` method should ideally handle the conversion
+                    # to its required format, or jobs from BrightData are already standard.
+                    if db.insert_job(job_detail): # store_job now expects a dict
+                        stored_count += 1
                 else:
-                    duplicate_count += 1
-                    logger.debug(f"Duplicate job skipped: {job.get('job_title', 'No Title')}")
-                    
-                # Update results progressively during storage
-                realtime_search_status['results']['jobs_stored'] = stored_count
-                realtime_search_status['results']['duplicates'] = duplicate_count
-                
-                # Add small delay every 3 jobs to allow frontend updates
-                if (stored_count + duplicate_count) % 3 == 0:
-                    time.sleep(0.5)
-                
-            except Exception as e:
-                logger.error(f"Failed to store job {i+1}: {e} - Job data: {str(job)[:200]}")
-                continue
+                    logger.warning(f"⚠️ Skipping non-dict job item: {type(job_detail)}")
         
-        # Complete
-        # Add final delay to allow frontend to see final storage results
-        time.sleep(1)
+        logger.info(f"💾 Stored {stored_count}/{len(jobs)} jobs in the database.")
         
-        realtime_search_status['current_phase'] = 'Search completed!'
+        # Update final results
+        realtime_search_status['results']['jobs_stored'] = stored_count
         realtime_search_status['progress'] = 100
+        realtime_search_status['current_phase'] = f'Search completed. {stored_count} jobs stored.'
         realtime_search_status['is_running'] = False
         realtime_search_status['completed_at'] = datetime.now().isoformat()
-        realtime_search_status['results'] = {
-            'urls_discovered': total_jobs_found,
-            'jobs_extracted': len(standardized_jobs),
-            'jobs_filtered': len(filtered_jobs),
-            'jobs_stored': stored_count,
-            'duplicates': duplicate_count,
-            'search_term': search_term,
-            'source': 'LinkedIn Jobs Discovery'
-        }
         
-        # Cleanup
-        linkedin_scraper.close()
-        
-        logger.info(f"✅ LinkedIn search completed: {stored_count} new jobs stored")
-        
+        # linkedin_scraper.close() # Close session if necessary
+
     except Exception as e:
-        import traceback
-        logger.error(f"Error in LinkedIn real-time search: {e}")
-        logger.error(f"Full traceback: {traceback.format_exc()}")
-        realtime_search_status['error'] = str(e)
-        realtime_search_status['is_running'] = False
-        realtime_search_status['completed_at'] = datetime.now().isoformat()
+        logger.error(f"❌ Error in real-time search: {e}", exc_info=True)
+        realtime_search_status.update({
+            'is_running': False,
+            'error': str(e),
+            'completed_at': datetime.now().isoformat(),
+            'current_phase': f'Search failed: {str(e)[:100]}...' # Truncate long errors
+        })
 
 
 @app.route('/bulk_action', methods=['POST'])

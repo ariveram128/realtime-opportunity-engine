@@ -28,37 +28,40 @@ class LinkedInScraperHandler:
     def __init__(self):
         """
         Initialize the LinkedIn scraper handler
+        Requires BRIGHT_DATA_API_KEY environment variable
         """
         self.api_key = os.getenv('BRIGHT_DATA_API_KEY')
-        self.timeout = int(os.getenv('REQUEST_TIMEOUT', 60))
-        
         if not self.api_key:
-            raise ValueError(
-                "Missing BRIGHT_DATA_API_KEY environment variable. "
-                "Please set this in your .env file"
-            )
+            raise ValueError("BRIGHT_DATA_API_KEY environment variable is required")
+            
+        # Initialize rate limiting
+        self.last_request_time = 0
+        self.min_request_interval = 1  # seconds between requests
+        
+        # Initialize session
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        })
         
         # Bright Data API endpoint
         self.api_endpoint = "https://api.brightdata.com/datasets/v3/trigger"
         
-        # Session for connection reuse
-        self.session = requests.Session()
-        self.session.headers.update({
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
-        })
-        
-        # Rate limiting
-        self.last_request_time = 0
-        self.min_delay = 2  # Minimum delay between requests
+        # Multiple dataset IDs to try (in case one is deprecated)
+        self.dataset_ids = [
+            "gd_l7q7zkzd03yqhb5lm",  # Updated LinkedIn dataset ID
+            "gd_lpfll7v5hcqtkxl6l",  # Original dataset ID (fallback)
+            "gd_lnkd_jobs_v1",       # Alternative dataset ID
+        ]
     
     def _rate_limit(self):
         """Apply rate limiting between requests"""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         
-        if time_since_last < self.min_delay:
-            sleep_time = self.min_delay - time_since_last
+        if time_since_last < self.min_request_interval:
+            sleep_time = self.min_request_interval - time_since_last
             logger.info(f"⏳ Rate limiting: waiting {sleep_time:.1f}s")
             time.sleep(sleep_time)
         
@@ -67,46 +70,120 @@ class LinkedInScraperHandler:
     def discover_jobs_by_keyword(self, keyword: str, max_results: int = 20) -> Dict:
         """
         Discover LinkedIn jobs using keyword search
-        Uses: "Linkedin job listings information - discover by keyword"
-        
-        Args:
-            keyword (str): Search keyword (e.g., "software engineering intern")
-            max_results (int): Maximum number of jobs to return
-        
-        Returns:
-            Dict: Search results with job data
+        Uses Bright Data's specialized LinkedIn dataset for job discovery by keyword.
         """
         logger.info(f"🔍 Discovering LinkedIn jobs for keyword: '{keyword}'")
-        
-        # Apply rate limiting
-        self._rate_limit()
-        
+
+        # Dataset ID for "Linkedin job listings information - Discover new jobs by keyword"
+        # as per Bright Data documentation examples.
+        dataset_id = "gd_lpfll7v5hcqtkxl6l"
+
+        self._rate_limit() # Ensure rate limiting is applied
+
+        try:
+            # Payload for keyword-based discovery
+            payload = [
+                {
+                    "keyword": keyword,
+                    "location": "United States",
+                    "country": "US",
+                }
+            ]
+
+            # API endpoint
+            url = "https://api.brightdata.com/datasets/v3/trigger"
+
+            # Query parameters as per documentation for keyword discovery
+            params = {
+                "dataset_id": dataset_id,
+                "type": "discover_new", # Crucial for discovery
+                "discover_by": "keyword", # Crucial for discovery
+                "limit_per_input": max_results,
+                "format": "json",
+                "uncompressed_webhook": True, # Recommended for easier debugging
+                "include_errors": True
+            }
+
+            # Make the request using the initialized session
+            logger.info(f"📡 Making LinkedIn discovery request to dataset '{dataset_id}' with keyword '{keyword}'...")
+            response = self.session.post(
+                url,
+                params=params,
+                json=payload, # Send data as JSON body
+                timeout=60 # Increased timeout for discovery requests
+            )
+
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            result = response.json()
+
+            logger.info(f"API Response: {result}")
+
+
+            if result.get("status") == "running" and result.get("snapshot_id"):
+                logger.info(f"✅ Job discovery initiated successfully. Snapshot ID: {result['snapshot_id']}")
+                return {
+                    "success": True,
+                    "snapshot_id": result["snapshot_id"],
+                    "status": "initiated",
+                    "dataset_id_used": dataset_id
+                }
+            elif result.get("snapshot_id"): # Sometimes status might not be 'running' immediately
+                logger.warning(f"⚠️ Job discovery request accepted, but status is '{result.get('status')}'. Snapshot ID: {result['snapshot_id']}")
+                return {
+                    "success": True, # Treat as success if snapshot_id is returned
+                    "snapshot_id": result["snapshot_id"],
+                    "status": result.get("status", "unknown_initiated"),
+                    "dataset_id_used": dataset_id
+                }
+            else:
+                error_message = result.get("error", "Unknown error: No snapshot_id in response and status not 'running'")
+                logger.error(f"❌ LinkedIn API request failed: {error_message}. Response: {result}")
+                return {"success": False, "error": error_message, "dataset_id_used": dataset_id}
+
+        except requests.exceptions.HTTPError as http_err:
+            error_content = "No content"
+            try:
+                error_content = http_err.response.json()
+            except ValueError: # If response is not JSON
+                error_content = http_err.response.text
+            logger.error(f"❌ HTTP error during LinkedIn discovery: {http_err.response.status_code} {http_err.response.reason}. Content: {error_content}")
+            return {"success": False, "error": f"HTTP {http_err.response.status_code}: {http_err.response.reason}. Details: {error_content}", "dataset_id_used": dataset_id}
+        except requests.exceptions.RequestException as req_err:
+            logger.error(f"❌ Request exception during LinkedIn discovery: {str(req_err)}")
+            return {"success": False, "error": f"Request failed: {str(req_err)}", "dataset_id_used": dataset_id}
+        except ValueError as val_err: # Handles JSON decoding errors or missing snapshot_id
+            logger.error(f"❌ Value error (e.g., JSON decoding, missing fields) in LinkedIn discovery: {str(val_err)}. API Response was: {response.text if 'response' in locals() else 'Response object not available'}")
+            return {"success": False, "error": f"Data processing error: {str(val_err)}", "dataset_id_used": dataset_id}
+        except Exception as e:
+            logger.error(f"❌ Unexpected error in LinkedIn discovery: {str(e)}", exc_info=True)
+            return {"success": False, "error": f"Unexpected error: {str(e)}", "dataset_id_used": dataset_id}
+    
+    def _try_discovery_with_dataset(self, keyword: str, max_results: int, dataset_id: str) -> Dict:
+        """
+        Try job discovery with a specific dataset ID
+        """
         # Prepare request payload for LinkedIn keyword discovery
-        # Using discovery format based on official Bright Data docs
         payload = [
             {
-                "keyword": keyword,  # Required field for discovery
-                "location": "United States",  # Optional but recommended
-                "country": "US",  # Country filter
-                # Additional optional filters could be added here
+                "keyword": keyword,
+                "location": "United States",
+                "country": "US",
             }
         ]
         
         # Query parameters for discovery scraper
         params = {
-            "dataset_id": "gd_lpfll7v5hcqtkxl6l",  # LinkedIn jobs dataset ID from docs
-            "type": "discover_new",  # Discovery type
-            "discover_by": "keyword",  # Discovery method
-            "limit_per_input": max_results,  # Limit results per input
+            "dataset_id": dataset_id,
+            "type": "discover_new",
+            "discover_by": "keyword",
+            "limit_per_input": max_results,
             "format": "json",
             "uncompressed_webhook": True,
             "include_errors": True
         }
         
         try:
-            logger.info(f"📡 Making LinkedIn discovery request...")
-            logger.info(f"🎯 Keyword: {keyword}, Max Results: {max_results}")
-            logger.info(f"🌍 Location: United States, Country: US")
+            logger.info(f"📡 Making LinkedIn discovery request with dataset {dataset_id}...")
             
             response = self.session.post(
                 self.api_endpoint,
@@ -117,59 +194,152 @@ class LinkedInScraperHandler:
             response.raise_for_status()
             
             response_data = response.json()
-            logger.info(f"📊 API Response: {response_data}")
             
-            # Check if the request was successful
-            if response_data.get('snapshot_id'):
+            if response_data.get('status') == 'running':
                 snapshot_id = response_data.get('snapshot_id')
-                logger.info(f"📊 LinkedIn job discovery initiated, snapshot ID: {snapshot_id}")
+                logger.info(f"📊 Job discovery initiated, snapshot ID: {snapshot_id}")
                 
-                # Wait for completion and get results
-                job_data = self._wait_for_completion(snapshot_id)
-                
-                if job_data:
-                    # Limit results to max_results
-                    limited_jobs = job_data[:max_results] if len(job_data) > max_results else job_data
-                    
-                    logger.info(f"✅ Successfully discovered {len(limited_jobs)} LinkedIn jobs (from {len(job_data)} total)")
-                    return {
-                        'success': True,
-                        'source': 'LinkedIn Jobs Discovery',
-                        'keyword': keyword,
-                        'jobs_found': len(limited_jobs),
-                        'job_data': limited_jobs,
-                        'timestamp': datetime.now().isoformat(),
-                        'snapshot_id': snapshot_id
-                    }
-                else:
-                    logger.warning(f"⚠️ No job data received for keyword: {keyword}")
-                    return {
-                        'success': False,
-                        'source': 'LinkedIn Jobs Discovery',
-                        'keyword': keyword,
-                        'error': 'No job data received',
-                        'timestamp': datetime.now().isoformat()
-                    }
+                return {
+                    'success': True,
+                    'source': 'LinkedIn Jobs Discovery',
+                    'keyword': keyword,
+                    'snapshot_id': snapshot_id,
+                    'dataset_id': dataset_id,
+                    'status': 'running',
+                    'timestamp': datetime.now().isoformat()
+                }
             else:
-                error_msg = response_data.get('error', 'Unknown error - no snapshot_id returned')
-                logger.error(f"❌ LinkedIn discovery request failed: {error_msg}")
+                error_msg = response_data.get('error', f'Unexpected status: {response_data.get("status")}')
                 return {
                     'success': False,
                     'source': 'LinkedIn Jobs Discovery',
                     'keyword': keyword,
+                    'dataset_id': dataset_id,
                     'error': error_msg,
                     'timestamp': datetime.now().isoformat()
                 }
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error with LinkedIn discovery request: {e}")
             return {
                 'success': False,
                 'source': 'LinkedIn Jobs Discovery',
                 'keyword': keyword,
+                'dataset_id': dataset_id,
                 'error': str(e),
                 'timestamp': datetime.now().isoformat()
             }
+    
+    def _generate_demo_data(self, keyword: str, max_results: int) -> Dict:
+        """
+        Generate demo data when API fails
+        """
+        logger.info(f"🎭 Generating demo data for keyword: '{keyword}'")
+        
+        # Create realistic demo jobs based on keyword
+        demo_jobs = []
+        companies = ["TechCorp Inc.", "DataScience Solutions", "AI Innovations", "StartupX", "BigTech Co."]
+        locations = ["San Francisco, CA", "New York, NY", "Seattle, WA", "Austin, TX", "Remote"]
+        
+        for i in range(min(max_results, 5)):
+            job_id = f"demo_linkedin_{int(time.time())}_{i}"
+            demo_jobs.append({
+                "job_id": job_id,
+                "title": f"{keyword.title()} Internship",
+                "company": companies[i % len(companies)],
+                "location": locations[i % len(locations)],
+                "url": f"https://linkedin.com/jobs/view/{job_id}",
+                "description": f"Exciting {keyword} internship opportunity with hands-on experience in cutting-edge technology. This role offers mentorship, real-world projects, and potential for full-time conversion.",
+                "posted_date": datetime.now().strftime('%Y-%m-%d'),
+                "job_type": "Internship",
+                "experience_level": "Entry level",
+                "source": "LinkedIn (Demo)",
+                "demo_data": True
+            })
+        
+        return {
+            'success': True,
+            'source': 'LinkedIn Jobs Discovery (Demo)',
+            'keyword': keyword,
+            'jobs': demo_jobs,
+            'demo_mode': True,
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def convert_to_standard_format(self, jobs_data: List[Dict]) -> List[Dict]:
+        """
+        Convert LinkedIn job data to standard format
+        
+        Args:
+            jobs_data (List[Dict]): Raw job data from LinkedIn API
+        
+        Returns:
+            List[Dict]: Standardized job data
+        """
+        standardized_jobs = []
+        
+        logger.info(f"Starting conversion of {len(jobs_data)} jobs to standard format")
+        
+        for i, job in enumerate(jobs_data):
+            try:
+                # Log the raw data first
+                logger.info(f"Raw job data for job {i}:")
+                logger.info(f"  company_name: {job.get('company_name')}")
+                logger.info(f"  job_title: {job.get('job_title')}")
+                logger.info(f"  location: {job.get('job_location')}")
+                
+                if isinstance(job, dict):
+                    # Extract job data with fallbacks
+                    job_title = job.get('job_title') or f"Internship Opportunity {i+1}"
+                    company = job.get('company_name')  # Get company_name from LinkedIn API
+                    if not company or not company.strip():
+                        logger.warning(f"Missing company name for job {i}, job_title: {job_title}")
+                        company = "Unknown Company"
+                    location = job.get('job_location') or "Location TBD"
+                    description = job.get('job_summary') or job.get('job_description_formatted') or "Job description not available"
+                    url = job.get('url') or f"https://linkedin.com/jobs/view/demo_{i}"
+                    
+                    # Additional fields from API
+                    job_type = job.get('job_employment_type') or job.get('job_type', 'Internship')
+                    experience_level = job.get('job_seniority_level') or 'Entry level'
+                    posted_date = job.get('job_posted_date') or datetime.now().strftime('%Y-%m-%d')
+                    
+                    # Generate unique job ID
+                    import hashlib
+                    unique_data = f"{job_title}_{company}_{int(time.time())}_{i}"
+                    job_id = f"linkedin_{hashlib.md5(unique_data.encode()).hexdigest()[:8]}"
+                    
+                    standardized_job = {
+                        'job_id': job_id,
+                        'job_title': job_title,
+                        'company': company,  # This should be the company name from LinkedIn
+                        'location': location,
+                        'description': description,
+                        'url': url,
+                        'job_type': job_type,
+                        'experience_level': experience_level,
+                        'posted_date': posted_date,
+                        'source': 'LinkedIn',
+                        'extracted_at': datetime.now().isoformat(),
+                        'status': 'new',
+                        'demo_data': job.get('demo_data', False)
+                    }
+                    
+                    # Log the standardized data
+                    logger.info(f"Standardized job {i}:")
+                    logger.info(f"  Title: {standardized_job['job_title']}")
+                    logger.info(f"  Company: {standardized_job['company']}")
+                    logger.info(f"  Location: {standardized_job['location']}")
+                    
+                    standardized_jobs.append(standardized_job)
+                else:
+                    logger.error(f"Job {i} is not a dictionary: {type(job)}")
+                    
+            except Exception as e:
+                logger.error(f"Error converting job {i}: {str(e)}", exc_info=True)
+                continue
+        
+        logger.info(f"✅ Converted {len(standardized_jobs)} jobs to standard format")
+        return standardized_jobs
     
     def _wait_for_completion(self, snapshot_id: str, max_wait_time: int = 300) -> Optional[List[Dict]]:
         """
@@ -197,323 +367,61 @@ class LinkedInScraperHandler:
                 status_response.raise_for_status()
                 status_data = status_response.json()
                 
-                status = status_data.get('status')
+                status = status_data.get('status', 'unknown')
                 progress = status_data.get('progress', 0)
                 
-                logger.info(f"📊 Status: {status}, Progress: {progress}%")
+                logger.info(f"📊 LinkedIn Status: {status}, Progress: {progress}%")
                 
-                # Handle completed status
                 if status == 'completed':
-                    logger.info(f"✅ Scraping completed! Downloading results...")
+                    logger.info(f"✅ LinkedIn scraping completed! Downloading results...")
                     
-                    # Download results
                     download_response = self.session.get(download_url, timeout=60)
                     download_response.raise_for_status()
-                    
                     job_data = download_response.json()
                     
-                    if isinstance(job_data, list) and len(job_data) > 0:
-                        logger.info(f"📥 Downloaded {len(job_data)} job records")
-                        return job_data
-                    else:
-                        logger.warning(f"⚠️ Downloaded data is empty or invalid format")
-                        return None
-                
-                # Handle ready status - attempt to download results
+                    logger.info(f"📊 Downloaded {len(job_data) if isinstance(job_data, list) else 1} job records")
+                    # Log the first job item if data is a list and not empty
+                    if isinstance(job_data, list) and job_data:
+                        logger.info(f"🔍 Raw first job item from API: {json.dumps(job_data[0], indent=2)}")
+                    return job_data
+                    
+                elif status == 'failed':
+                    error = status_data.get('error', 'Unknown error')
+                    logger.error(f"❌ LinkedIn scraping failed: {error}")
+                    return None
+                    
                 elif status == 'ready':
-                    logger.info(f"📊 Status is 'ready' - attempting to download results...")
+                    logger.info(f"📊 LinkedIn status is 'ready' - attempting to download results...")
                     
                     try:
-                        # Try to download results
                         download_response = self.session.get(download_url, timeout=60)
                         download_response.raise_for_status()
-                        
                         job_data = download_response.json()
                         
                         if isinstance(job_data, list) and len(job_data) > 0:
                             logger.info(f"✅ Successfully downloaded {len(job_data)} job records from 'ready' status")
+                            # Log the first job item if data is a list and not empty
+                            if job_data: # Ensure job_data is not an empty list
+                                logger.info(f"🔍 Raw first job item from API (ready status): {json.dumps(job_data[0], indent=2)}")
                             return job_data
                         else:
                             logger.info(f"📊 'Ready' status but no data yet, continuing to wait...")
-                    
                     except Exception as e:
                         logger.info(f"📊 'Ready' status but download not available yet: {e}")
-                        # Continue waiting
-                
-                elif status == 'failed':
-                    error = status_data.get('error', 'Unknown error')
-                    logger.error(f"❌ Scraping failed: {error}")
-                    return None
-                
-                # For running status or other statuses, continue waiting
-                elif status in ['running', 'pending', 'queued']:
-                    logger.info(f"⏳ Still {status}, waiting...")
-                
-                else:
-                    logger.warning(f"⚠️ Unknown status: {status}")
                 
                 # Wait before next check
                 time.sleep(check_interval)
                 
             except Exception as e:
-                logger.error(f"❌ Error checking status: {e}")
+                logger.error(f"Error checking status: {e}")
                 time.sleep(check_interval)
         
-        logger.error(f"⏰ Timeout: Scraping did not complete within {max_wait_time} seconds")
+        logger.warning(f"⏰ LinkedIn scraping timed out after {max_wait_time} seconds")
         return None
-    
-    def collect_job_by_url(self, job_url: str) -> Dict:
-        """
-        Collect detailed job data from specific LinkedIn job URL
-        Uses: "Linkedin job listings information - collect by URL"
-        
-        Args:
-            job_url (str): LinkedIn job URL
-        
-        Returns:
-            Dict: Detailed job data
-        """
-        logger.info(f"🔗 Collecting LinkedIn job data from URL: {job_url}")
-        
-        # Apply rate limiting
-        self._rate_limit()
-        
-        # Prepare request payload for LinkedIn URL collection
-        payload = {
-            "dataset_id": "gd_l7q4dp3lc7j2e38kf0",  # LinkedIn job listings - collect by URL
-            "include_errors": True,
-            "format": "json",
-            "uncompressed_webhook": True,
-            "data": [
-                {
-                    "url": job_url
-                }
-            ]
-        }
-        
-        try:
-            logger.info(f"📡 Making request to LinkedIn Job Collection API...")
-            
-            response = self.session.post(
-                self.api_endpoint,
-                json=payload,
-                timeout=self.timeout
-            )
-            response.raise_for_status()
-            
-            response_data = response.json()
-            
-            if response_data.get('status') == 'running':
-                snapshot_id = response_data.get('snapshot_id')
-                logger.info(f"📊 Job collection initiated, snapshot ID: {snapshot_id}")
-                
-                # Wait for completion and get results
-                job_data = self._wait_for_completion(snapshot_id)
-                
-                if job_data and len(job_data) > 0:
-                    job_info = job_data[0]  # Should be single job
-                    logger.info(f"✅ Successfully collected job: {job_info.get('title', 'Unknown')}")
-                    return {
-                        'success': True,
-                        'source': 'LinkedIn Job Collection',
-                        'url': job_url,
-                        'job_data': job_info,
-                        'timestamp': datetime.now().isoformat(),
-                        'snapshot_id': snapshot_id
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'source': 'LinkedIn Job Collection',
-                        'url': job_url,
-                        'error': 'No job data received',
-                        'timestamp': datetime.now().isoformat()
-                    }
-            else:
-                error_msg = response_data.get('error', 'Unknown error')
-                return {
-                    'success': False,
-                    'source': 'LinkedIn Job Collection',
-                    'url': job_url,
-                    'error': error_msg,
-                    'timestamp': datetime.now().isoformat()
-                }
-                
-        except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error with LinkedIn collection request: {e}")
-            return {
-                'success': False,
-                'source': 'LinkedIn Job Collection',
-                'url': job_url,
-                'error': str(e),
-                'timestamp': datetime.now().isoformat()
-            }
-    
-    def search_multiple_keywords(self, keywords: List[str], max_results_per_keyword: int = 10) -> List[Dict]:
-        """
-        Search for jobs using multiple keywords
-        
-        Args:
-            keywords (List[str]): List of keywords to search
-            max_results_per_keyword (int): Max results per keyword
-        
-        Returns:
-            List[Dict]: Combined results from all keyword searches
-        """
-        logger.info(f"🔍 Searching LinkedIn for {len(keywords)} keywords")
-        
-        all_results = []
-        
-        for i, keyword in enumerate(keywords, 1):
-            logger.info(f"📋 Processing keyword {i}/{len(keywords)}: '{keyword}'")
-            
-            result = self.discover_jobs_by_keyword(keyword, max_results_per_keyword)
-            all_results.append(result)
-              # Rate limiting between keywords
-            if i < len(keywords):
-                time.sleep(3)
-        
-        return all_results
     
     def close(self):
         """Close the session"""
         self.session.close()
-    
-    def _safe_get(self, job_data, key, default=''):
-        """
-        Safely get a value from job data, handling different data types
-        
-        Args:
-            job_data: The job data (should be dict)
-            key: The key to get
-            default: Default value if key not found
-            
-        Returns:
-            The value or default
-        """
-        try:
-            if isinstance(job_data, dict):
-                return job_data.get(key, default)
-            else:
-                logger.warning(f"⚠️ Expected dict but got {type(job_data)} when accessing key '{key}'")
-                return default
-        except Exception as e:
-            logger.warning(f"⚠️ Error accessing key '{key}': {e}")
-            return default
-    
-    def convert_to_standard_format(self, linkedin_data: List[Dict]) -> List[Dict]:
-        """
-        Convert LinkedIn scraper data to our standard format
-        
-        Args:
-            linkedin_data: Raw data from LinkedIn scraper
-        
-        Returns:
-            List[Dict]: Standardized job data
-        """
-        standardized_jobs = []
-        
-        logger.info(f"🔄 Converting {len(linkedin_data)} LinkedIn jobs to standard format")
-        logger.debug(f"📊 Input data type: {type(linkedin_data)}")
-          # Add more detailed debugging for the data structure
-        if isinstance(linkedin_data, list) and len(linkedin_data) > 0:
-            logger.debug(f"📊 First item type: {type(linkedin_data[0])}")
-            logger.debug(f"📊 First item preview: {str(linkedin_data[0])[:500] if linkedin_data[0] else 'None'}")
-            
-            # Log the first few items to understand the structure
-            for idx in range(min(3, len(linkedin_data))):
-                item = linkedin_data[idx]
-                logger.debug(f"📊 Item {idx+1} - Type: {type(item)}, Content: {str(item)[:300]}")
-                if isinstance(item, (list, tuple)) and len(item) > 0:
-                    logger.debug(f"📊 Item {idx+1} - First element: {type(item[0])}, {str(item[0])[:200]}")
-        
-        for i, job in enumerate(linkedin_data):
-            try:                # Debug: Log job structure with more details
-                logger.debug(f"📊 Job {i+1} type: {type(job)}")
-                
-                # Handle different data structures that LinkedIn might return
-                original_job = job  # Keep reference for debugging
-                
-                if isinstance(job, dict):
-                    logger.debug(f"📊 Job {i+1} keys: {list(job.keys())}")
-                elif isinstance(job, list):
-                    logger.warning(f"⚠️ Job {i+1} is a list with {len(job)} items: {str(job)[:100]}")
-                    # If job is a list, try different extraction strategies
-                    if len(job) > 0:
-                        if isinstance(job[0], dict):
-                            logger.info(f"📊 Using first dict item from job list: {i+1}")
-                            job = job[0]
-                        elif isinstance(job[0], list) and len(job[0]) > 0:
-                            # Handle nested lists
-                            logger.info(f"📊 Job {i+1} is nested list, trying to extract dict")
-                            nested_item = job[0][0] if isinstance(job[0][0], dict) else job[0]
-                            if isinstance(nested_item, dict):
-                                job = nested_item
-                            else:
-                                logger.warning(f"⚠️ Job {i+1} nested structure doesn't contain dict, skipping")
-                                continue
-                        else:
-                            logger.warning(f"⚠️ Job {i+1} list doesn't contain suitable data, skipping")
-                            continue
-                    else:
-                        logger.warning(f"⚠️ Job {i+1} is empty list, skipping")
-                        continue
-                elif isinstance(job, (str, int, float)):
-                    logger.warning(f"⚠️ Job {i+1} is primitive type {type(job)}: {str(job)[:100]}, skipping")
-                    continue
-                else:
-                    logger.warning(f"⚠️ Job {i+1} is unknown type: {type(job)}, skipping")
-                    continue
-                
-                # Final validation - ensure we have a dictionary
-                if not isinstance(job, dict):
-                    logger.error(f"❌ Job {i+1} could not be converted to dict (final type: {type(job)})")
-                    logger.debug(f"❌ Original job data: {str(original_job)[:300]}")
-                    continue
-                
-                # Extract and clean job data using correct LinkedIn field names
-                # Use safe access with comprehensive error handling
-                try:
-                    standardized_job = {
-                        'job_id': self._safe_get(job, 'job_posting_id', f"linkedin_{len(standardized_jobs)}"),
-                        'job_title': self._safe_get(job, 'job_title', 'No Title Available'),
-                        'company': self._safe_get(job, 'company_name', 'Unknown Company'),
-                        'location': self._safe_get(job, 'job_location', 'Location Not Specified'),
-                        'description': self._safe_get(job, 'job_summary', ''),
-                        'url': self._safe_get(job, 'url', ''),
-                        'job_type': self._safe_get(job, 'job_employment_type', 'Not Specified'),
-                        'seniority_level': self._safe_get(job, 'job_seniority_level', 'Not Specified'),
-                        'industries': self._safe_get(job, 'job_industries', ''),
-                        'company_url': self._safe_get(job, 'company_url', ''),
-                        'company_logo': self._safe_get(job, 'company_logo', ''),
-                        'country_code': self._safe_get(job, 'country_code', ''),
-                        'extracted_at': datetime.now().isoformat(),
-                        'status': 'new',
-                        'source': 'LinkedIn Jobs Discovery',
-                        'raw_data': json.dumps(job) if isinstance(job, (dict, list)) else str(job)
-                    }
-                except Exception as field_error:
-                    logger.error(f"❌ Error extracting fields from job {i+1}: {field_error}")
-                    logger.debug(f"📊 Job data causing field error: {str(job)[:500]}")
-                    continue
-                
-                # Clean up data
-                for key in standardized_job:
-                    if standardized_job[key] is None:
-                        standardized_job[key] = ''
-                    elif not isinstance(standardized_job[key], str):
-                        standardized_job[key] = str(standardized_job[key])
-                
-                standardized_jobs.append(standardized_job)
-                logger.debug(f"✅ Successfully converted job {i+1}: {standardized_job['job_title']}")
-                
-            except Exception as e:
-                logger.error(f"❌ Error converting job {i+1}: {e}")
-                logger.debug(f"📊 Problematic job data: {str(job)[:500]}")
-                continue
-        
-        logger.info(f"✅ Successfully converted {len(standardized_jobs)}/{len(linkedin_data)} LinkedIn jobs")
-        return standardized_jobs
 
 
 def test_linkedin_scraper():
