@@ -1252,6 +1252,25 @@ async def run_mcp_search_async(search_term, max_results):
 
 # ==================== END MCP ROUTES ====================
 
+@app.route('/api/session', methods=['GET'])
+def api_session():
+    """API endpoint to get or create a session ID"""
+    try:
+        # Get or create session ID
+        session_id = get_or_create_session_id()
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting session ID: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
 if __name__ == '__main__':
     app.run(
         host=WEB_CONFIG['host'],
