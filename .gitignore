@@ -4,6 +4,7 @@
 *.pyc
 __pycache__/
 /linkedinscraper-main
+/data
 
 # Output/log files
 *.json
