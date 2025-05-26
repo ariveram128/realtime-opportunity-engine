@@ -343,9 +343,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <button class="btn btn-warning mcp-search-btn nav-link text-dark">
+                        <a class="nav-link mcp-search-btn" href="#" data-bs-toggle="modal" data-bs-target="#mcpSearchModal">
                             <i class="fas fa-robot me-1"></i> MCP Search
-                        </button>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -515,5 +515,297 @@
     </script>
     
     {% block extra_scripts %}{% endblock %}
+    
+    <script>
+        // Stepper functions for the max results input
+        function incrementStepper(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            const currentValue = parseInt(input.value);
+            const max = parseInt(input.getAttribute('max') || '100');
+            const step = 5;
+
+            if (currentValue < max) {
+                input.value = Math.min(currentValue + step, max);
+            }
+        }
+
+        function decrementStepper(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            const currentValue = parseInt(input.value);
+            const min = parseInt(input.getAttribute('min') || '1');
+            const step = 5;
+            const effectiveMin = 5;
+
+            if (currentValue > effectiveMin) {
+                input.value = Math.max(currentValue - step, effectiveMin);
+            } else if (currentValue > min && currentValue <= effectiveMin) {
+                input.value = Math.max(currentValue - step, min);
+            }
+        }
+        
+        // Global MCP Search functions
+        function executeMCPSearch() {
+            if (window.jobSearchApp?.components?.mcpSearch) {
+                window.jobSearchApp.components.mcpSearch.executeMCPSearch();
+            }
+        }
+
+        function cancelMCPSearch() {
+            if (window.jobSearchApp?.components?.mcpSearch) {
+                window.jobSearchApp.components.mcpSearch.cancelMCPSearch();
+            }
+        }
+
+        function viewMCPJobs() {
+            if (window.jobSearchApp?.components?.mcpSearch) {
+                window.jobSearchApp.components.mcpSearch.viewMCPJobs();
+            }
+        }
+    </script>
+      <!-- MCP Search Modal -->
+    <div class="modal fade" id="mcpSearchModal" tabindex="-1" aria-labelledby="mcpSearchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content glassmorphic-modal">
+                <div class="modal-header glassmorphic-modal-header">
+                    <div class="d-flex align-items-center">
+                        <div class="glassmorphic-modal-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h4 class="modal-title mb-0" id="mcpSearchModalLabel">Bright Data MCP Search</h4>
+                            <small class="text-white-50">Find fresh opportunities using advanced web scraping</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body glassmorphic-modal-body">
+                    <!-- Configuration Section -->
+                    <div id="mcpConfig">
+                        <div class="glassmorphic-search-form">
+                            <form id="mcpSearchForm" onsubmit="return false;">
+                                <div class="mb-4">
+                                    <label for="mcpSearchTerm" class="form-label d-flex align-items-center">
+                                        <i class="fas fa-search me-2"></i> Search Query
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg glassmorphic-input" id="mcpSearchTerm" placeholder="e.g., software engineering internship, marketing intern, data science" required>
+                                    <small class="text-white-50 mt-2 d-block">
+                                        <i class="fas fa-info-circle me-1"></i> Enter keywords to search for internships and entry-level positions.
+                                    </small>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="mcpMaxResults" class="form-label d-flex align-items-center">
+                                        <i class="fas fa-list-ol me-2"></i> Max Results
+                                    </label>
+                                    <div class="input-group">
+                                        <button type="button" class="btn glassmorphic-btn-outline" onclick="decrementStepper('mcpMaxResults')">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" class="form-control form-control-lg glassmorphic-input text-center" id="mcpMaxResults" value="10" min="1" max="50" readonly>
+                                        <button type="button" class="btn glassmorphic-btn-outline" onclick="incrementStepper('mcpMaxResults')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="glassmorphic-card mt-4">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="glassmorphic-info-icon me-3">
+                                        <i class="fas fa-rocket"></i>
+                                    </div>
+                                    <h5 class="mb-0 text-white">Job Discovery Process</h5>
+                                </div>
+                                
+                                <div class="ps-4 mt-4">
+                                    <div class="glassmorphic-phase-item mb-3">
+                                        <i class="fas fa-search text-primary"></i>
+                                        <span><strong>Search:</strong> Query LinkedIn and Indeed for fresh job postings</span>
+                                    </div>
+                                    
+                                    <div class="glassmorphic-phase-item mb-3">
+                                        <i class="fas fa-file-alt text-success"></i>
+                                        <span><strong>Extract:</strong> Parse job details from listings</span>
+                                    </div>
+                                    
+                                    <div class="glassmorphic-phase-item mb-3">
+                                        <i class="fas fa-filter text-warning"></i>
+                                        <span><strong>Filter:</strong> Apply quality and relevance filters</span>
+                                    </div>
+                                    
+                                    <div class="glassmorphic-phase-item">
+                                        <i class="fas fa-database text-info"></i>
+                                        <span><strong>Store:</strong> Add new jobs to your database</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Section -->
+                    <div id="mcpProgress" style="display: none;">
+                        <div class="glassmorphic-card mb-4">
+                            <div class="glassmorphic-header">
+                                <i class="fas fa-spinner fa-spin me-2"></i> Search Progress
+                            </div>
+                            <div class="glassmorphic-body">
+                                <h5 class="phase-text mb-3 text-center text-white">Initializing MCP search...</h5>
+                                <div class="progress mb-4" style="height: 12px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                </div>
+                                
+                                <div class="row text-center g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="discovered-count" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">URLs Discovered</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="accessed-count" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Pages Accessed</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="extracted-count" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Jobs Extracted</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="analyzed-count" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Jobs Analyzed</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-4">
+                                    <div>
+                                        <span class="glassmorphic-badge badge-secondary" data-mcp-action="DISCOVER">
+                                            <i class="fas fa-search"></i> DISCOVER
+                                        </span>
+                                        <span class="glassmorphic-badge badge-secondary" data-mcp-action="ACCESS">
+                                            <i class="fas fa-key"></i> ACCESS
+                                        </span>
+                                        <span class="glassmorphic-badge badge-secondary" data-mcp-action="EXTRACT">
+                                            <i class="fas fa-file-export"></i> EXTRACT
+                                        </span>
+                                        <span class="glassmorphic-badge badge-secondary" data-mcp-action="INTERACT">
+                                            <i class="fas fa-brain"></i> INTERACT
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-danger glassmorphic-btn-danger" onclick="cancelMCPSearch()">
+                                        <i class="fas fa-stop-circle me-2"></i> Cancel Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Section -->
+                    <div id="mcpResults" style="display: none;">
+                        <div class="glassmorphic-card mb-4">
+                            <div class="glassmorphic-header">
+                                <i class="fas fa-check-circle me-2"></i> Search Complete
+                            </div>
+                            <div class="glassmorphic-body">
+                                <div class="text-center mb-4">
+                                    <div class="glassmorphic-success-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <h5 class="mb-4 text-center text-white" id="mcpResultsText">Search completed successfully!</h5>
+                                </div>
+                                
+                                <div class="row text-center g-3">
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="discovered-final" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">URLs Discovered</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="accessed-final" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Pages Accessed</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="extracted-final" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Jobs Extracted</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="glassmorphic-stat">
+                                            <div class="card-body">
+                                                <h3 id="analyzed-final" class="text-white">0</h3>
+                                                <p class="mb-0 text-white-50">Jobs Analyzed</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-center mt-4">
+                                    <button type="button" class="btn btn-primary glassmorphic-btn-primary btn-lg px-5 py-3 fw-bold" onclick="viewMCPJobs()" id="viewJobsBtn">
+                                        <i class="fas fa-eye me-2"></i> View Discovered Jobs
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Section -->
+                    <div id="mcpError" style="display: none;">
+                        <div class="glassmorphic-card mb-4">
+                            <div class="glassmorphic-header bg-danger-soft">
+                                <i class="fas fa-exclamation-circle me-2"></i> Search Error
+                            </div>
+                            <div class="glassmorphic-body">
+                                <div class="text-center mb-4">
+                                    <i class="fas fa-exclamation-triangle text-danger fa-3x"></i>
+                                </div>
+                                <h5 class="text-center mb-3 text-white">An error occurred during the search</h5>
+                                <p class="text-center text-danger" id="errorMessage">Error details will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer glassmorphic-modal-footer">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div id="mcpModalStatus" class="text-white-50">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Ready to discover fresh job opportunities
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-primary glassmorphic-btn-primary" id="startDiscoveryBtn" onclick="executeMCPSearch()">
+                                <i class="fas fa-rocket me-2"></i>Start Discovery
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
-</html> 
+</html>

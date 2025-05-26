@@ -536,15 +536,21 @@ class JobCardManager {
 // ========== MCP Search Enhancement ==========
 class MCPSearchManager {
     constructor() {
-        this.searchStatus = null;
-        this.statusInterval = null;
-        this.init();
+        this.modal = null;
+        this.modalInstance = null;
+        this.statusPollingInterval = null;
+        this.searchInProgress = false;
     }
-
+    
     init() {
         this.setupMCPModal();
         this.setupMCPSearch();
         this.initializeBrightDataBranding();
+        
+        // Attach to global mcp search button
+        document.querySelectorAll('.mcp-search-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.showMCPModal());
+        });
     }
     
     initializeBrightDataBranding() {
@@ -563,8 +569,25 @@ class MCPSearchManager {
     setupMCPModal() {
         const mcpModal = document.getElementById('mcpSearchModal');
         if (mcpModal) {
+            this.modal = mcpModal;
+            
+            // Initialize Bootstrap modal
+            this.modalInstance = new bootstrap.Modal(mcpModal);
+            
             mcpModal.addEventListener('show.bs.modal', () => {
                 this.resetMCPModalState();
+            });
+            
+            // Fix for modal backdrop not being removed
+            mcpModal.addEventListener('hidden.bs.modal', () => {
+                // Remove any lingering backdrop
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => {
+                    backdrop.remove();
+                });
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
             });
             
             // Add event listeners for MCP action explanations
@@ -574,22 +597,42 @@ class MCPSearchManager {
                     this.showActionExplanation(action);
                 });
             });
+            
+            // Set up the search form submission
+            const searchForm = document.getElementById('mcpSearchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.executeMCPSearch();
+                });
+            }
         }
     }
 
     setupMCPSearch() {
-        // Enhanced MCP search button
-        const mcpSearchBtn = document.querySelector('.mcp-search-btn');
-        if (mcpSearchBtn) {
-            mcpSearchBtn.addEventListener('click', () => {
-                this.showMCPModal();
-            });
+        // No need to add click handlers as we're using data-bs-toggle="modal" now
+        // Just ensure we have the modal instance ready
+        const mcpModal = document.getElementById('mcpSearchModal');
+        if (mcpModal && !this.modalInstance) {
+            this.modal = mcpModal;
+            this.modalInstance = new bootstrap.Modal(mcpModal);
         }
     }
 
     showMCPModal() {
-        const modal = new bootstrap.Modal(document.getElementById('mcpSearchModal'));
-        modal.show();
+        if (this.modalInstance) {
+            this.modalInstance.show();
+        } else {
+            // Fallback if modalInstance is not initialized
+            const mcpModal = document.getElementById('mcpSearchModal');
+            if (mcpModal) {
+                this.modal = mcpModal;
+                this.modalInstance = new bootstrap.Modal(mcpModal);
+                this.modalInstance.show();
+            } else {
+                console.error('MCP modal element not found');
+            }
+        }
     }
 
     resetMCPModalState() {
@@ -669,15 +712,14 @@ class MCPSearchManager {
                     this.startMCPStatusPolling();
                     Utils.showToast('Bright Data MCP search started successfully', 'success');
                 } else {
-                    throw new Error(result.error || 'Failed to start MCP search');
+                    this.showMCPError(result.error || 'Failed to start MCP search');
                 }
             } else {
-                throw new Error('Network error');
+                this.showMCPError('Failed to connect to server');
             }
         } catch (error) {
             console.error('MCP search error:', error);
-            this.showMCPError(error.message);
-            Utils.showToast('Failed to start MCP search', 'error');
+            this.showMCPError('An error occurred while starting the search');
         }
     }
 
@@ -833,6 +875,9 @@ class MCPSearchManager {
             const totalJobs = status.results.analyzed_jobs || 0;
             resultsText.textContent = `Found and analyzed ${totalJobs} internship opportunities with Bright Data MCP enhanced AI insights.`;
         }
+        
+        // Show the View Jobs button
+        document.getElementById('viewJobsBtn').style.display = 'inline-block';
     }
 
     async cancelMCPSearch() {
