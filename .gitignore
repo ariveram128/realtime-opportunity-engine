@@ -12,3 +12,6 @@ __pycache__/
 *_backup.py
 *_fixed.py
 fix_*.py
+
+# Deployment logs
+deployment_logs.txt
