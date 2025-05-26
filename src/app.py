@@ -948,6 +948,9 @@ def api_mcp_search():
         if not search_term:
             return jsonify({'success': False, 'error': 'Search term is required'})
         
+        # Get session ID in the request context
+        session_id = get_or_create_session_id()
+        
         # Initialize MCP search status
         mcp_search_status.update({
             'is_running': True,
@@ -966,7 +969,7 @@ def api_mcp_search():
         # Start MCP search in background thread
         mcp_thread = threading.Thread(
             target=run_mcp_search_wrapper,
-            args=(search_term, max_results)
+            args=(search_term, max_results, session_id)
         )
         mcp_thread.daemon = True
         mcp_thread.start()
@@ -986,6 +989,14 @@ def api_mcp_search():
 @app.route('/api/mcp_search/status')
 def api_mcp_search_status():
     """Get the current status of the MCP search"""
+    # Add a flag to indicate if we're using demo data
+    if 'using_demo_data' not in mcp_search_status:
+        mcp_search_status['using_demo_data'] = False
+        
+    # If we're using demo data, make sure we communicate this clearly
+    if mcp_search_status.get('using_demo_data', False) and mcp_search_status.get('is_running', False):
+        mcp_search_status['current_phase'] = 'Using demo data: ' + mcp_search_status.get('current_phase', '')
+        
     return jsonify(mcp_search_status)
 
 
@@ -1019,13 +1030,13 @@ def api_mcp_metrics():
     })
 
 
-def run_mcp_search_wrapper(search_term, max_results):
+def run_mcp_search_wrapper(search_term, max_results, session_id):
     """
     Wrapper function to run async MCP search in a thread
     """
-    asyncio.run(run_mcp_search_async(search_term, max_results))
+    asyncio.run(run_mcp_search_async(search_term, max_results, session_id))
 
-async def run_mcp_search_async(search_term, max_results):
+async def run_mcp_search_async(search_term, max_results, session_id):
     """
     Run MCP-enhanced search pipeline demonstrating all four actions (async version)
     """
@@ -1048,12 +1059,23 @@ async def run_mcp_search_async(search_term, max_results):
                 max_results=max_results
             )
         
-        if not discover_result.success:
+        # Don't treat demo data as an error - check if we have job URLs regardless
+        if not discover_result.success and not discover_result.data.get('job_urls'):
             error_msg = discover_result.metadata.get('error', 'Unknown error in DISCOVER phase')
             raise Exception(f"DISCOVER failed: {error_msg}")
         
+        # Check if we're using demo data and log it
+        if "MCP_Demo" in str(discover_result.data):
+            logger.info("🎭 Using demo data for MCP search (Bright Data API not available)")
+            # Update the status to indicate we're using demo data
+            mcp_search_status['using_demo_data'] = True
+            mcp_search_status['current_phase'] = 'Using demo data for demonstration...'
+        
         mcp_search_status['progress'] = 30
         mcp_search_status['results']['discovered_urls'] = len(discover_result.data.get('job_urls', []))
+        
+        # Get the enhanced jobs data which contains the raw job data from the API
+        enhanced_jobs = discover_result.data.get('enhanced_jobs', [])
         
         # Action 2: ACCESS - Context-aware page navigation
         mcp_search_status['current_action'] = 'ACCESS'
@@ -1093,14 +1115,31 @@ async def run_mcp_search_async(search_term, max_results):
         extracted_jobs = []
         
         for i, page in enumerate(accessed_pages):
+            # Find the corresponding raw job data from the API
+            raw_job_data = None
+            for job in enhanced_jobs:
+                if job.get('url') == page['url']:
+                    raw_job_data = job.get('raw_data')
+                    break
+            
             extract_result = await mcp_handler.extract_job_data(
                 html_content=page['page_data']['html_content'],
                 url=page['url'],
-                context={"llm_powered": True, "intelligent_parsing": True}
+                context={"llm_powered": True, "intelligent_parsing": True, "raw_job_data": raw_job_data}
             )
             
             if extract_result.success:
                 job_data = extract_result.data
+                
+                # If we have raw job data from the API, use it to enhance our extracted data
+                if raw_job_data:
+                    # Override the demo data with real data from the API
+                    job_data['job_title'] = raw_job_data.get('job_title', job_data.get('job_title'))
+                    job_data['company'] = raw_job_data.get('company_name', job_data.get('company'))
+                    job_data['location'] = raw_job_data.get('job_location', job_data.get('location'))
+                    job_data['description'] = raw_job_data.get('job_summary', job_data.get('description'))
+                    job_data['job_id'] = f"linkedin_{raw_job_data.get('job_posting_id', '')}"
+                
                 job_data['source_url'] = page['url']
                 job_data['extraction_method'] = 'MCP_LLM_Enhanced'
                 extracted_jobs.append(job_data)
@@ -1174,7 +1213,8 @@ async def run_mcp_search_async(search_term, max_results):
                     'source': 'MCP_Enhanced_Discovery',
                     'extracted_at': datetime.now().isoformat(),
                     'job_type': 'Internship',
-                    'raw_data': json.dumps(job, default=str)  # Handle any non-serializable objects
+                    'raw_data': json.dumps(job, default=str),  # Handle any non-serializable objects
+                    'session_id': session_id
                 }
                 
                 # Add MCP-specific enhancements if available
