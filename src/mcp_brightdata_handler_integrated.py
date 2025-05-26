@@ -601,9 +601,9 @@ class BrightDataMCPHandler:
         
         # Create realistic HTML content with category-specific information
         html_content = f"""
-        <html>
+            <html>
         <head><title>{job_data['title']} at {job_data['company']}</title></head>
-        <body>
+                <body>
             <h1 class="job-title">{job_data['title']}</h1>
             <div class="company-info">
                 <span class="company-name">{job_data['company']}</span>
@@ -629,9 +629,9 @@ class BrightDataMCPHandler:
                 <span class="employment-type">Full-time</span>
                 <span class="posted-date">Posted 1 day ago</span>
                 <span class="application-deadline">Apply by: {timestamp}</span>
-            </div>
-        </body>
-        </html>
+                    </div>
+                </body>
+            </html>
         """
         
         return {
