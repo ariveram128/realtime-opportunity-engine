@@ -305,6 +305,16 @@
         }
     </style>    
     {% block extra_head %}{% endblock %}
+    <!-- Session Management -->
+    <script>
+        // Session ID from Flask (if available)
+        const serverSessionId = "{{ session.get('session_id', '') }}";
+        
+        // Store server session ID in localStorage for persistence
+        if (serverSessionId) {
+            localStorage.setItem('job_finder_session_id', serverSessionId);
+        }
+    </script>
 </head>
 <body>
     <!-- Navigation -->
