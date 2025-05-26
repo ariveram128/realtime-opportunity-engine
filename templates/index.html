@@ -2081,6 +2081,94 @@
         background: rgba(255, 255, 255, 0.1);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
+
+    /* Glassmorphic Pagination Styles */
+    .glassmorphic-pagination .pagination {
+        gap: var(--space-sm);
+    }
+
+    .glassmorphic-pagination .page-link {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: var(--radius-lg);
+        padding: var(--space-md) var(--space-lg);
+        transition: var(--transition-all);
+        font-weight: 600;
+    }
+
+    .glassmorphic-pagination .page-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .glassmorphic-pagination .page-item.active .page-link {
+        background: var(--gradient-primary);
+        border-color: transparent;
+        box-shadow: var(--shadow-lg), var(--shadow-colored);
+    }
+
+    /* Glassmorphic Empty State Styles */
+    .glassmorphic-empty-state {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-2xl);
+        padding: var(--space-3xl);
+        margin: var(--space-2xl) 0;
+        box-shadow: var(--shadow-xl);
+        text-align: center;
+    }
+
+    .glassmorphic-empty-state i {
+        color: var(--accent-cyan);
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        animation: pulse 2s infinite;
+    }
+
+    .glassmorphic-empty-state h3 {
+        color: white;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .glassmorphic-empty-state p {
+        color: rgba(255, 255, 255, 0.8);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Glassmorphic Page Link Styles */
+    .glassmorphic-page-link {
+        color: white;
+        transition: var(--transition-all);
+    }
+
+    .glassmorphic-page-link:hover {
+        color: var(--accent-cyan);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .glassmorphic-page-link.active {
+        color: var(--accent-cyan);
+        box-shadow: var(--shadow-lg), var(--shadow-colored);
+    }
+
+    /* Glassmorphic Disabled Page Link Styles */
+    .glassmorphic-page-link.disabled {
+        color: rgba(255, 255, 255, 0.5);
+        pointer-events: none;
+    }
+
+    /* Glassmorphic Ellipsis Styles */
+    .glassmorphic-ellipsis {
+        color: rgba(255, 255, 255, 0.5);
+        margin: 0 var(--space-sm);
+    }
 </style>
 {% endblock %}
 
@@ -2088,7 +2176,7 @@
 <!-- Particle Background Effect -->
 <div class="particles" id="particles"></div>
 
-<!-- Award-Winning Hero Section -->
+<!-- Hero Section -->
 <div class="hero-section text-center">
     <h1 class="display-5 fw-bold mb-4">
         <i class="fas fa-rocket me-3"></i>
@@ -2132,7 +2220,7 @@
             </div>
             <div class="col-auto">
                 <div class="hero-stat">
-                    <div class="hero-stat-number">99.9%</div>
+                    <div class="hero-stat-number">98%</div>
                     <div class="hero-stat-label">Accuracy Rate</div>
                 </div>
             </div>
@@ -2246,7 +2334,7 @@
     </div>
     <!-- Main Content Area -->
     <div class="col-lg-9 col-md-8">
-        <!-- Award-Winning Search Container -->
+        <!-- Search Container -->
         <div class="professional-search-container search-enhancement mb-4 glow-on-hover">
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <div>
@@ -2418,37 +2506,49 @@
                 
                 <!-- Pagination -->
                 {% if total_pages and total_pages > 1 %}
-                    <nav class="professional-pagination mt-5">
-                        <ul class="pagination justify-content-center">
+                    <nav class="glassmorphic-pagination mt-5" aria-label="Job listings pagination">
+                        <ul class="pagination pagination-lg justify-content-center">
                             {% if page > 1 %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('index', page=page-1, search=search_query, status=current_status) }}">
+                                    <a class="page-link glassmorphic-page-link" href="{{ url_for('index', page=page-1, search=search_query, status=current_status) }}" aria-label="Previous">
                                         <i class="fas fa-chevron-left"></i>
                                     </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link glassmorphic-page-link">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </span>
                                 </li>
                             {% endif %}
                             
                             {% for page_num in range(1, total_pages + 1) %}
                                 {% if page_num == page %}
                                     <li class="page-item active">
-                                        <span class="page-link">{{ page_num }}</span>
+                                        <span class="page-link glassmorphic-page-link active">{{ page_num }}</span>
                                     </li>
-                                {% elif page_num <= 2 or page_num >= total_pages - 1 or (page_num >= page - 2 and page_num <= page + 2) %}
+                                {% elif page_num <= 2 or page_num >= total_pages - 1 or (page_num >= page - 1 and page_num <= page + 1) %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('index', page=page_num, search=search_query, status=current_status) }}">{{ page_num }}</a>
+                                        <a class="page-link glassmorphic-page-link" href="{{ url_for('index', page=page_num, search=search_query, status=current_status) }}">{{ page_num }}</a>
                                     </li>
-                                {% elif page_num == 3 or page_num == total_pages - 2 %}
+                                {% elif page_num == 3 and page > 4 or page_num == total_pages - 2 and page < total_pages - 3 %}
                                     <li class="page-item disabled">
-                                        <span class="page-link">...</span>
+                                        <span class="page-link glassmorphic-page-link">...</span>
                                     </li>
                                 {% endif %}
                             {% endfor %}
                             
                             {% if page < total_pages %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('index', page=page+1, search=search_query, status=current_status) }}">
+                                    <a class="page-link glassmorphic-page-link" href="{{ url_for('index', page=page+1, search=search_query, status=current_status) }}" aria-label="Next">
                                         <i class="fas fa-chevron-right"></i>
                                     </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link glassmorphic-page-link">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </span>
                                 </li>
                             {% endif %}
                         </ul>
@@ -2457,29 +2557,29 @@
                 
             {% else %}
                 <!-- No Jobs Found State -->
-                <div class="professional-empty-state text-center py-5">
+                <div class="glassmorphic-empty-state">
                     <div class="mb-4">
-                        <i class="fas fa-search fs-1 text-primary mb-3"></i>
-                        <h3 class="fw-bold text-dark">No Opportunities Found</h3>
+                        <i class="fas fa-search fs-1 mb-3"></i>
+                        <h3 class="fw-bold">No Opportunities Found</h3>
                         {% if search_query %}
-                            <p class="text-muted">No jobs match your search for "{{ search_query }}".</p>
-                            <a href="{{ url_for('index', status=current_status) }}" class="btn btn-outline-secondary mt-2">
+                            <p class="mb-4">No jobs match your search for "{{ search_query }}".</p>
+                            <a href="{{ url_for('index', status=current_status) }}" class="btn btn-outline-light glassmorphic-btn-outline">
                                 <i class="fas fa-times me-1"></i>Clear Search
                             </a>
                         {% elif current_status and current_status != 'all' %}
-                            <p class="text-muted">No jobs with status "{{ current_status }}".</p>
-                            <a href="{{ url_for('index', status='all') }}" class="btn btn-outline-secondary mt-2">
+                            <p class="mb-4">No jobs with status "{{ current_status }}".</p>
+                            <a href="{{ url_for('index', status='all') }}" class="btn btn-outline-light glassmorphic-btn-outline">
                                 <i class="fas fa-list me-1"></i>Show All Jobs
                             </a>
                         {% else %}
-                            <p class="text-muted">No jobs in database yet. Use the preview MCP Search to see how the feature will work.</p>
+                            <p class="mb-4">No jobs in database yet. Use the Real-time Job Discovery to find opportunities.</p>
                         {% endif %}
                     </div>
                     <div class="d-flex justify-content-center gap-3">
-                        <button type="button" class="btn btn-professional-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
+                        <button type="button" class="btn btn-primary glassmorphic-btn-primary" data-bs-toggle="modal" data-bs-target="#realtimeSearchModal">
                             <i class="fas fa-globe me-2"></i>Discover New Jobs
                         </button>
-                        <a href="{{ url_for('statistics') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('statistics') }}" class="btn btn-outline-light glassmorphic-btn-outline">
                             <i class="fas fa-chart-line me-2"></i>View Analytics
                         </a>
                     </div>
@@ -4724,31 +4824,31 @@ function animateCounter(elementId, targetValue) {
 <!-- Job Details Modal -->
 <div class="modal fade" id="jobDetailModal" tabindex="-1" aria-labelledby="jobDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content professional-modal">
-            <div class="modal-header professional-modal-header">
+        <div class="modal-content glassmorphic-modal">
+            <div class="modal-header glassmorphic-modal-header">
                 <div class="d-flex align-items-center">
-                    <div class="professional-modal-icon">
+                    <div class="glassmorphic-modal-icon">
                         <i class="fas fa-briefcase"></i>
                     </div>
                     <div>
                         <h4 class="modal-title mb-0" id="jobDetailModalLabel">Job Details</h4>
-                        <small class="text-muted">Complete opportunity information</small>
+                        <small class="text-white-50">Complete opportunity information</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body professional-modal-body">
+            <div class="modal-body glassmorphic-modal-body">
                 <div class="row g-4">
                     <!-- Job Title -->
                     <div class="col-12">
-                        <div class="professional-info-card">
+                        <div class="glassmorphic-info-card">
                             <div class="d-flex align-items-start">
-                                <div class="professional-icon-wrapper bg-primary">
-                                    <i class="fas fa-briefcase text-white"></i>
+                                <div class="glassmorphic-info-icon">
+                                    <i class="fas fa-briefcase"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1 text-muted">Position</h6>
-                                    <h5 class="mb-0" id="modalJobTitle">Job Title</h5>
+                                    <h6 class="mb-1 text-white-50">Position</h6>
+                                    <h5 class="mb-0 text-white" id="modalJobTitle">Job Title</h5>
                                 </div>
                             </div>
                         </div>
@@ -4756,14 +4856,14 @@ function animateCounter(elementId, targetValue) {
 
                     <!-- Company -->
                     <div class="col-md-6">
-                        <div class="professional-info-card">
+                        <div class="glassmorphic-info-card">
                             <div class="d-flex align-items-start">
-                                <div class="professional-icon-wrapper bg-success">
-                                    <i class="fas fa-building text-white"></i>
+                                <div class="glassmorphic-info-icon">
+                                    <i class="fas fa-building"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1 text-muted">Company</h6>
-                                    <p class="mb-0 fw-semibold" id="modalJobCompany">Company Name</p>
+                                    <h6 class="mb-1 text-white-50">Company</h6>
+                                    <p class="mb-0 fw-semibold text-white" id="modalJobCompany">Company Name</p>
                                 </div>
                             </div>
                         </div>
@@ -4771,14 +4871,14 @@ function animateCounter(elementId, targetValue) {
 
                     <!-- Location -->
                     <div class="col-md-6">
-                        <div class="professional-info-card">
+                        <div class="glassmorphic-info-card">
                             <div class="d-flex align-items-start">
-                                <div class="professional-icon-wrapper bg-info">
-                                    <i class="fas fa-map-marker-alt text-white"></i>
+                                <div class="glassmorphic-info-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1 text-muted">Location</h6>
-                                    <p class="mb-0 fw-semibold" id="modalJobLocation">Location</p>
+                                    <h6 class="mb-1 text-white-50">Location</h6>
+                                    <p class="mb-0 fw-semibold text-white" id="modalJobLocation">Location</p>
                                 </div>
                             </div>
                         </div>
@@ -4786,14 +4886,14 @@ function animateCounter(elementId, targetValue) {
 
                     <!-- Job Description -->
                     <div class="col-12">
-                        <div class="professional-info-card">
+                        <div class="glassmorphic-info-card">
                             <div class="d-flex align-items-start">
-                                <div class="professional-icon-wrapper bg-warning">
-                                    <i class="fas fa-file-alt text-white"></i>
+                                <div class="glassmorphic-info-icon">
+                                    <i class="fas fa-file-alt"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-2 text-muted">Description</h6>
-                                    <div class="job-description-content" id="modalJobDescription">
+                                    <h6 class="mb-2 text-white-50">Description</h6>
+                                    <div class="job-description-content text-white-90" id="modalJobDescription">
                                         Job description will appear here...
                                     </div>
                                 </div>
@@ -4802,13 +4902,13 @@ function animateCounter(elementId, targetValue) {
                     </div>
                 </div>
             </div>
-            <div class="modal-footer professional-modal-footer">
-                <a href="#" id="modalJobLink" class="btn btn-professional-primary" target="_blank">
-                    <i class="fas fa-external-link-alt me-2"></i>View Original Job Posting
-                </a>
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer glassmorphic-modal-footer">
+                <button type="button" class="btn btn-outline-light glassmorphic-btn-outline" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Close
                 </button>
+                <a href="#" class="btn btn-primary glassmorphic-btn-primary" id="modalJobLink" target="_blank">
+                    <i class="fas fa-external-link-alt me-2"></i>View Original Posting
+                </a>
             </div>
         </div>
     </div>

@@ -94,7 +94,7 @@ def index():
         status = request.args.get('status', 'all')
         search = request.args.get('search', '')
         page = int(request.args.get('page', 1))
-        per_page = 20
+        per_page = 12  
         
         # Get jobs based on filters
         if status == 'all':
