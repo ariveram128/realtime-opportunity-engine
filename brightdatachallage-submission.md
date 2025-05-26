@@ -17,7 +17,7 @@ My solution leverages Bright Data's MCP (Multi-Collector Platform) to scrape fre
 ## Demo
 
 ### Project Repository
-GitHub Repository: [realtime-opportunity-engine](https://github.com/yourusername/realtime-opportunity-engine)
+GitHub Repository: [realtime-opportunity-engine](https://github.com/ariveram128/realtime-opportunity-engine)
 
 ### Screenshots
 
