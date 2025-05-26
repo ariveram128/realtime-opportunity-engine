@@ -1184,6 +1184,7 @@
         right: 0;
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         animation: shimmer 2s infinite;
+        width: 50%; /* Control width of shimmer effect */
     }
     
     @keyframes shimmer {
@@ -1987,6 +1988,7 @@
         display: flex;
         justify-content: space-between;
         margin-bottom: 1rem;
+        width: 100%; /* Ensure it takes full width to center its content row */
     }
 
     .glassmorphic-result-stat {
@@ -2013,6 +2015,40 @@
         padding: 1rem;
         transition: all 0.3s ease;
         transform: translateY(0);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .glassmorphic-result-number {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--accent-cyan);
+        text-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
+        animation: float 3s ease-in-out infinite;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        margin-bottom: 1rem;
+    }
+    
+    .glassmorphic-result-label {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+        text-align: center;
     }
     
     .glassmorphic-result-stat:hover {
@@ -2168,6 +2204,14 @@
     .glassmorphic-ellipsis {
         color: rgba(255, 255, 255, 0.5);
         margin: 0 var(--space-sm);
+    }
+
+    #discoveryResults { /* Added to center this section */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
     }
 </style>
 {% endblock %}
@@ -2746,20 +2790,20 @@
                             <h4 class="glassmorphic-success-title">Job Discovery Complete!</h4>
                         </div>
                         <div class="glassmorphic-summary-stats">
-                            <div class="row g-4 text-center">
-                                <div class="col-4">
+                            <div class="row g-4 text-center justify-content-center">
+                                <div class="col-md-4 col-sm-4">
                                     <div class="glassmorphic-result-stat">
                                         <div class="glassmorphic-result-number" id="finalUrlsFound">0</div>
                                         <div class="glassmorphic-result-label">URLs Discovered</div>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-md-4 col-sm-4">
                                     <div class="glassmorphic-result-stat">
                                         <div class="glassmorphic-result-number" id="finalJobsAdded">0</div>
                                         <div class="glassmorphic-result-label">New Jobs Added</div>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-md-4 col-sm-4">
                                     <div class="glassmorphic-result-stat">
                                         <div class="glassmorphic-result-number" id="finalDuplicates">0</div>
                                         <div class="glassmorphic-result-label">Duplicates Skipped</div>
@@ -4772,9 +4816,10 @@ function incrementStepper(inputId) {
     
     const currentValue = parseInt(input.value);
     const max = parseInt(input.getAttribute('max') || '100');
-    
+    const step = 5; // Changed from 10 to 5
+
     if (currentValue < max) {
-        input.value = currentValue + 10;
+        input.value = Math.min(currentValue + step, max);
     }
 }
 
@@ -4784,10 +4829,14 @@ function decrementStepper(inputId) {
     
     const currentValue = parseInt(input.value);
     const min = parseInt(input.getAttribute('min') || '1');
-    
-    // Don't go below 10 for max results
-    if (currentValue > Math.max(min, 10)) {
-        input.value = currentValue - 10;
+    const step = 5; // Changed from 10 to 5
+    const effectiveMin = 5; // Ensure minimum is 5
+
+    if (currentValue > effectiveMin) {
+        input.value = Math.max(currentValue - step, effectiveMin);
+    } else if (currentValue > min && currentValue <= effectiveMin) { 
+        // If current is between actual min and 5, allow decrement to actual min if it's less than 5
+        input.value = Math.max(currentValue - step, min);
     }
 }
 
