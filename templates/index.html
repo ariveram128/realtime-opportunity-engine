@@ -4868,6 +4868,21 @@ function animateCounter(elementId, targetValue) {
     
     requestAnimationFrame(updateCounter);
 }
+
+// Session ID management for user isolation
+function initSessionManagement() {
+    // Check if we have a session ID from the server
+    const sessionIdCookie = document.cookie.split('; ').find(row => row.startsWith('session='));
+    if (sessionIdCookie) {
+        // Extract session ID from cookie
+        const sessionId = sessionIdCookie.split('=')[1];
+        // Store in localStorage for persistence
+        localStorage.setItem('job_discovery_session_id', sessionId);
+    }
+}
+
+// Initialize session management
+document.addEventListener('DOMContentLoaded', initSessionManagement);
 </script>
 
 <!-- Job Details Modal -->
