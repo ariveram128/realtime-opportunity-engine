@@ -81,9 +81,9 @@ FILTERING_CONFIG = {
 
 # Web Interface Configuration
 WEB_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 5000,
-    'debug': True,
+    'host': '0.0.0.0',  # Bind to all interfaces (required for Render)
+    'port': int(os.environ.get('PORT', 5000)),  # Use Render's dynamic PORT
+    'debug': False,  # Disable debug in production
     'jobs_per_page': 20,
     'auto_refresh_minutes': 30
 }
