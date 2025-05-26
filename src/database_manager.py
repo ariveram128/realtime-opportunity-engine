@@ -58,7 +58,7 @@ class DatabaseManager:
             cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS {self.jobs_table} (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    job_id TEXT UNIQUE NOT NULL,
+                    job_id TEXT NOT NULL,
                     url TEXT NOT NULL,
                     source TEXT NOT NULL,
                     job_title TEXT,
@@ -81,8 +81,10 @@ class DatabaseManager:
                     notes TEXT,
                     rating INTEGER,
                     raw_data TEXT,
+                    session_id TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(job_id, session_id)
                 )
             ''')
             
@@ -130,12 +132,13 @@ class DatabaseManager:
         content = f"{url}|{title or ''}|{company or ''}"
         return hashlib.md5(content.encode()).hexdigest()
     
-    def job_exists(self, job_id: str) -> bool:
+    def job_exists(self, job_id: str, session_id: str = None) -> bool:
         """
         Check if a job already exists in the database
         
         Args:
             job_id (str): Unique job ID
+            session_id (str): Session ID to check within (optional)
         
         Returns:
             bool: True if job exists, False otherwise
@@ -145,7 +148,14 @@ class DatabaseManager:
         
         try:
             cursor = conn.cursor()
-            cursor.execute(f'SELECT 1 FROM {self.jobs_table} WHERE job_id = ?', (job_id,))
+            query = f'SELECT 1 FROM {self.jobs_table} WHERE job_id = ?'
+            params = [job_id]
+            
+            if session_id:
+                query += ' AND session_id = ?'
+                params.append(session_id)
+                
+            cursor.execute(query, params)
             result = cursor.fetchone() is not None
             return result
         except sqlite3.OperationalError as e:
@@ -176,8 +186,11 @@ class DatabaseManager:
             job_data.get('company', '')
         )
         
-        # Check if job already exists
-        if self.job_exists(job_id):
+        # Get session ID from job data
+        session_id = job_data.get('session_id')
+        
+        # Check if job already exists for this session
+        if self.job_exists(job_id, session_id):
             logger.debug(f"Job already exists: {job_id}")
             return False
         
@@ -201,6 +214,7 @@ class DatabaseManager:
             'application_deadline': job_data.get('application_deadline'),
             'extracted_at': job_data.get('extraction_metadata', {}).get('extracted_at', datetime.now().isoformat()),
             'content_length': job_data.get('extraction_metadata', {}).get('content_length', 0),
+            'session_id': job_data.get('session_id', None),
             'raw_data': json.dumps(job_data)
         }
         
@@ -283,7 +297,7 @@ class DatabaseManager:
             if close_conn:
                 conn.close()
     
-    def get_jobs(self, status: str = None, limit: int = 100, offset: int = 0) -> List[Dict]:
+    def get_jobs(self, status: str = None, limit: int = 100, offset: int = 0, session_id: str = None) -> List[Dict]:
         """
         Retrieve jobs from database with optional filtering
         
@@ -291,6 +305,7 @@ class DatabaseManager:
             status (str): Filter by status (optional)
             limit (int): Maximum number of jobs to return
             offset (int): Number of jobs to skip
+            session_id (str): Filter by session ID (optional)
         
         Returns:
             List[Dict]: List of job dictionaries
@@ -304,10 +319,18 @@ class DatabaseManager:
             
             query = f'SELECT * FROM {self.jobs_table}'
             params = []
+            where_clauses = []
             
             if status:
-                query += ' WHERE status = ?'
+                where_clauses.append('status = ?')
                 params.append(status)
+            
+            if session_id:
+                where_clauses.append('session_id = ?')
+                params.append(session_id)
+            
+            if where_clauses:
+                query += ' WHERE ' + ' AND '.join(where_clauses)
             
             query += ' ORDER BY extracted_at DESC LIMIT ? OFFSET ?'
             params.extend([limit, offset])
@@ -323,10 +346,13 @@ class DatabaseManager:
             if close_conn:
                 conn.close()
     
-    def get_job_stats(self) -> Dict:
+    def get_job_stats(self, session_id: str = None) -> Dict:
         """
         Get statistics about jobs in the database
         
+        Args:
+            session_id (str): Session ID to filter by (optional)
+            
         Returns:
             Dict: Statistics including counts by status, company, etc.
         """
@@ -337,48 +363,67 @@ class DatabaseManager:
             cursor = conn.cursor()
             
             stats = {}
+            session_filter = ""
+            params = []
+            
+            if session_id:
+                session_filter = "WHERE session_id = ?"
+                params = [session_id]
             
             # Total jobs
-            cursor.execute(f'SELECT COUNT(*) FROM {self.jobs_table}')
+            cursor.execute(f'SELECT COUNT(*) FROM {self.jobs_table} {session_filter}', params)
             stats['total_jobs'] = cursor.fetchone()[0]
             
             # Jobs by status
-            cursor.execute(f'''
+            status_query = f'''
                 SELECT status, COUNT(*) 
                 FROM {self.jobs_table} 
+                {session_filter}
                 GROUP BY status
-            ''')
+            '''
+            cursor.execute(status_query, params)
             stats['by_status'] = dict(cursor.fetchall())
             
             # Jobs by company (top 10)
-            cursor.execute(f'''
+            company_query = f'''
                 SELECT company, COUNT(*) 
                 FROM {self.jobs_table} 
                 WHERE company IS NOT NULL
+                {" AND session_id = ?" if session_id else ""}
                 GROUP BY company 
                 ORDER BY COUNT(*) DESC 
                 LIMIT 10
-            ''')
+            '''
+            company_params = [session_id] if session_id else []
+            cursor.execute(company_query, company_params)
             stats['top_companies'] = dict(cursor.fetchall())
             
             # Jobs by location (top 10)
-            cursor.execute(f'''
+            location_query = f'''
                 SELECT location, COUNT(*) 
                 FROM {self.jobs_table} 
                 WHERE location IS NOT NULL
+                {" AND session_id = ?" if session_id else ""}
                 GROUP BY location 
                 ORDER BY COUNT(*) DESC 
                 LIMIT 10
-            ''')
+            '''
+            location_params = [session_id] if session_id else []
+            cursor.execute(location_query, location_params)
             stats['top_locations'] = dict(cursor.fetchall())
             
             # Recent jobs (last 7 days)
             week_ago = (datetime.now() - timedelta(days=7)).isoformat()
-            cursor.execute(f'''
+            recent_query = f'''
                 SELECT COUNT(*) 
                 FROM {self.jobs_table} 
                 WHERE extracted_at >= ?
-            ''', (week_ago,))
+                {" AND session_id = ?" if session_id else ""}
+            '''
+            recent_params = [week_ago]
+            if session_id:
+                recent_params.append(session_id)
+            cursor.execute(recent_query, recent_params)
             stats['recent_jobs'] = cursor.fetchone()[0]
             
             return stats
@@ -389,13 +434,14 @@ class DatabaseManager:
             if close_conn:
                 conn.close()
     
-    def search_jobs(self, query: str, fields: List[str] = None) -> List[Dict]:
+    def search_jobs(self, query: str, fields: List[str] = None, session_id: str = None) -> List[Dict]:
         """
         Search jobs by text query in specified fields
         
         Args:
             query (str): Search query
             fields (List[str]): Fields to search in
+            session_id (str): Session ID to filter by (optional)
         
         Returns:
             List[Dict]: Matching jobs
@@ -411,19 +457,23 @@ class DatabaseManager:
             cursor = conn.cursor()
             
             # Build search conditions
-            conditions = []
+            search_conditions = []
             params = []
             
             for field in fields:
-                conditions.append(f"{field} LIKE ?")
+                search_conditions.append(f"{field} LIKE ?")
                 params.append(f"%{query}%")
             
-            where_clause = " OR ".join(conditions)
+            where_clause = "(" + " OR ".join(search_conditions) + ")"
+            where_clause += " AND status != 'hidden'"
+            
+            if session_id:
+                where_clause += " AND session_id = ?"
+                params.append(session_id)
             
             cursor.execute(f'''
                 SELECT * FROM {self.jobs_table}
-                WHERE ({where_clause})
-                AND status != 'hidden'
+                WHERE {where_clause}
                 ORDER BY extracted_at DESC
             ''', params)
             

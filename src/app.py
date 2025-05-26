@@ -12,9 +12,11 @@ import os
 import sys
 import traceback
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, Response, send_from_directory, session
 from typing import Dict, Optional
 import requests
+import uuid
+import asyncio
 
 # Import our components
 from .linkedin_scraper_handler import LinkedInScraperHandler
@@ -85,11 +87,20 @@ mcp_search_status = {
     'completed_at': None
 }
 
+# Helper function to get or create a session ID
+def get_or_create_session_id():
+    """Get existing session ID or create a new one"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    return session['session_id']
 
 @app.route('/')
 def index():
     """Main dashboard page"""
     try:
+        # Get session ID
+        session_id = get_or_create_session_id()
+        
         # Get filter parameters
         status = request.args.get('status', 'all')
         search = request.args.get('search', '')
@@ -98,9 +109,9 @@ def index():
         
         # Get jobs based on filters
         if status == 'all':
-            jobs = db.get_jobs(limit=1000)
+            jobs = db.get_jobs(limit=1000, session_id=session_id)
         else:
-            jobs = db.get_jobs(status=status, limit=1000)
+            jobs = db.get_jobs(status=status, limit=1000, session_id=session_id)
         
         # Apply search filter
         if search:
@@ -113,7 +124,7 @@ def index():
         paginated_jobs = jobs[start_idx:end_idx]
         
         # Get statistics
-        stats = db.get_job_stats()
+        stats = db.get_job_stats(session_id=session_id)
         
         return render_template('index.html',
                              jobs=paginated_jobs,
@@ -134,7 +145,8 @@ def index():
 def job_detail(job_id):
     """Show detailed view of a specific job"""
     try:
-        jobs = db.get_jobs(limit=1000)
+        session_id = get_or_create_session_id()
+        jobs = db.get_jobs(limit=1000, session_id=session_id)
         job = next((j for j in jobs if j['job_id'] == job_id), None)
         
         if not job:
@@ -164,9 +176,17 @@ def update_status():
         job_id = request.json.get('job_id')
         new_status = request.json.get('status')
         notes = request.json.get('notes', '')
+        session_id = get_or_create_session_id()
         
         if not job_id or not new_status:
             return jsonify({'success': False, 'error': 'Missing job_id or status'})
+        
+        # Check if the job belongs to this session
+        jobs = db.get_jobs(session_id=session_id)
+        job_exists = any(j['job_id'] == job_id for j in jobs)
+        
+        if not job_exists:
+            return jsonify({'success': False, 'error': 'Job not found or not accessible'})
         
         # Map frontend status to backend status
         status_mapping = {
@@ -196,10 +216,11 @@ def update_status():
 def statistics():
     """Show detailed statistics about jobs"""
     try:
-        stats = db.get_job_stats()
+        session_id = get_or_create_session_id()
+        stats = db.get_job_stats(session_id=session_id)
         
         # Get additional statistics
-        jobs = db.get_jobs(limit=1000)
+        jobs = db.get_jobs(limit=1000, session_id=session_id)
         
         # Calculate more detailed stats
         recent_stats = {
@@ -241,6 +262,8 @@ def search():
 def api_search():
     """API endpoint for searching jobs"""
     try:
+        session_id = get_or_create_session_id()
+        
         if request.method == 'GET':
             # Handle GET request with URL parameters
             search_text = request.args.get('search_text', '')
@@ -252,7 +275,7 @@ def api_search():
             per_page = 20
             
             # Get all jobs
-            all_jobs = db.get_jobs(limit=1000)
+            all_jobs = db.get_jobs(limit=1000, session_id=session_id)
             
             # Filter jobs based on criteria
             filtered_jobs = []
@@ -308,81 +331,96 @@ def api_search():
 
 @app.route('/api/realtime_search', methods=['POST'])
 def api_realtime_search():
-    """API endpoint for real-time job discovery and extraction"""
-    global realtime_search_status
-    
+    """API endpoint to trigger real-time job search"""
     try:
         # Check if a search is already running
         if realtime_search_status['is_running']:
             return jsonify({
                 'success': False,
-                'error': 'A real-time search is already in progress. Please wait for it to complete.'
+                'error': 'A search is already in progress'
             })
         
         # Get search parameters
-        search_data = request.json
-        search_term = search_data.get('search_term', '').strip()
-        max_results = search_data.get('max_results', 10)
+        data = request.json
+        search_term = data.get('search_term', '')
+        max_results = int(data.get('max_results', 10))
         
         if not search_term:
-            return jsonify({'success': False, 'error': 'Search term is required'})
+            return jsonify({
+                'success': False,
+                'error': 'Search term is required'
+            })
         
-        # Initialize search status
+        # Get session ID
+        session_id = get_or_create_session_id()
+        
+        # Reset search status
         realtime_search_status.update({
             'is_running': True,
             'progress': 0,
-            'current_phase': 'Initializing search...',
+            'current_action': 'Initializing search',
+            'current_phase': 'init',
             'results': {},
             'error': None,
             'started_at': datetime.now().isoformat(),
-            'completed_at': None,
-            'search_term': search_term,
-            'max_results': max_results
+            'completed_at': None
         })
         
-        # Start the search in a background thread
-        search_thread = threading.Thread(
-            target=run_realtime_search,
-            args=(search_term, max_results)
-        )
-        search_thread.daemon = True
-        search_thread.start()
+        # Start search in background thread
+        thread = threading.Thread(target=run_realtime_search, args=(search_term, max_results, session_id))
+        thread.daemon = True
+        thread.start()
         
         return jsonify({
             'success': True,
-            'message': 'Real-time search started',
-            'search_id': realtime_search_status['started_at']
+            'message': 'Search started'
         })
         
     except Exception as e:
         logger.error(f"Error starting real-time search: {e}")
-        realtime_search_status['is_running'] = False
-        realtime_search_status['error'] = str(e)
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 
 @app.route('/api/realtime_search/status')
 def api_realtime_search_status():
-    """Get the current status of the real-time search"""
+    """Get status of current real-time search"""
     return jsonify(realtime_search_status)
 
 
 @app.route('/api/realtime_search/cancel', methods=['POST'])
 def api_realtime_search_cancel():
-    """Cancel the current real-time search"""
-    global realtime_search_status
+    """Cancel ongoing real-time search"""
+    if not realtime_search_status['is_running']:
+        return jsonify({
+            'success': False,
+            'error': 'No search is currently running'
+        })
     
-    if realtime_search_status['is_running']:
-        realtime_search_status['is_running'] = False
-        realtime_search_status['current_phase'] = 'Cancelled by user'
-        realtime_search_status['completed_at'] = datetime.now().isoformat()
-        return jsonify({'success': True, 'message': 'Search cancelled'})
-    else:
-        return jsonify({'success': False, 'message': 'No active search to cancel'})
+    # Set status to not running
+    realtime_search_status.update({
+        'is_running': False,
+        'current_action': 'Search cancelled',
+        'completed_at': datetime.now().isoformat()
+    })
+    
+    return jsonify({
+        'success': True,
+        'message': 'Search cancelled'
+    })
 
 
-def run_realtime_search(search_term, max_results):
-    """Run the real-time search process"""
+def run_realtime_search(search_term, max_results, session_id=None):
+    """
+    Run real-time job search in background thread
+    
+    Args:
+        search_term (str): Search query
+        max_results (int): Maximum number of results to return
+        session_id (str): Session ID for user isolation
+    """
     global realtime_search_status
     
     try:
@@ -602,6 +640,7 @@ def run_realtime_search(search_term, max_results):
         realtime_search_status['progress'] = 90
         
         stored_count = 0
+        duplicates_count = 0
         if jobs: # Ensure there are jobs to store
             # Convert ALL jobs at once from LinkedIn API format to standard format
             try:
@@ -612,9 +651,24 @@ def run_realtime_search(search_term, max_results):
                 # Store each converted job
                 for converted_job in converted_jobs:
                     if isinstance(converted_job, dict):
+                        # Add session_id to the job data
+                        converted_job['session_id'] = session_id
+                        
+                        # Check if job already exists for this session
+                        job_id = db.generate_job_id(
+                            converted_job.get('url', ''),
+                            converted_job.get('job_title', ''),
+                            converted_job.get('company', '')
+                        )
+                        
+                        if db.job_exists(job_id, session_id):
+                            duplicates_count += 1
+                            continue
+                            
                         if db.insert_job(converted_job):
                             stored_count += 1
                         else:
+                            duplicates_count += 1
                             logger.debug(f"Job already exists or failed to insert: {converted_job.get('job_title', 'Unknown Title')}")
                     else:
                         logger.warning(f"⚠️ Skipping non-dict converted job: {type(converted_job)}")
@@ -626,9 +680,13 @@ def run_realtime_search(search_term, max_results):
         logger.info(f"💾 Stored {stored_count}/{len(jobs) if jobs else 0} jobs in the database.")
         
         # Update final results
-        realtime_search_status['results']['jobs_stored'] = stored_count
+        realtime_search_status['results'].update({
+            'urls_discovered': len(jobs) if jobs else 0,
+            'jobs_stored': stored_count,
+            'duplicates': duplicates_count
+        })
         realtime_search_status['progress'] = 100
-        realtime_search_status['current_phase'] = f'Search completed. {stored_count} jobs stored.'
+        realtime_search_status['current_phase'] = f'Search completed. {stored_count} jobs stored, {duplicates_count} duplicates skipped.'
         realtime_search_status['is_running'] = False
         realtime_search_status['completed_at'] = datetime.now().isoformat()
         
@@ -757,9 +815,17 @@ def api_delete_job():
     """API endpoint for deleting a single job"""
     try:
         job_id = request.json.get('job_id')
+        session_id = get_or_create_session_id()
         
         if not job_id:
             return jsonify({'success': False, 'error': 'Missing job_id'})
+        
+        # First check if the job belongs to this session
+        jobs = db.get_jobs(session_id=session_id)
+        job_exists = any(j['job_id'] == job_id for j in jobs)
+        
+        if not job_exists:
+            return jsonify({'success': False, 'error': 'Job not found or not accessible'})
         
         success = db.delete_job(job_id)
         
@@ -780,20 +846,29 @@ def api_delete_jobs():
         job_ids = request.json.get('job_ids', [])
         delete_type = request.json.get('delete_type', 'selected')  # 'selected', 'all', 'status'
         status = request.json.get('status')
+        session_id = get_or_create_session_id()
+        
+        # Get all jobs for this session
+        jobs = db.get_jobs(session_id=session_id)
+        session_job_ids = [j['job_id'] for j in jobs]
         
         deleted_count = 0
         
         if delete_type == 'selected' and job_ids:
-            # Delete specific jobs
+            # Delete specific jobs (only if they belong to this session)
             for job_id in job_ids:
-                if db.delete_job(job_id):
+                if job_id in session_job_ids and db.delete_job(job_id):
                     deleted_count += 1
         elif delete_type == 'status' and status:
-            # Delete all jobs with specific status
-            deleted_count = db.delete_jobs_by_status(status)
+            # Delete all jobs with specific status (only for this session)
+            for job in jobs:
+                if job['status'] == status and db.delete_job(job['job_id']):
+                    deleted_count += 1
         elif delete_type == 'all':
-            # Delete all jobs (with confirmation)
-            deleted_count = db.delete_all_jobs()
+            # Delete all jobs for this session
+            for job in jobs:
+                if db.delete_job(job['job_id']):
+                    deleted_count += 1
         
         return jsonify({
             'success': True,
@@ -948,7 +1023,6 @@ def run_mcp_search_wrapper(search_term, max_results):
     """
     Wrapper function to run async MCP search in a thread
     """
-    import asyncio
     asyncio.run(run_mcp_search_async(search_term, max_results))
 
 async def run_mcp_search_async(search_term, max_results):
