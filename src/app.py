@@ -22,6 +22,7 @@ import asyncio
 from .linkedin_scraper_handler import LinkedInScraperHandler
 from .database_manager import DatabaseManager
 from .job_filter import JobFilter
+from src.nlp_utils import get_embedding, calculate_cosine_similarity
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
@@ -87,6 +88,8 @@ mcp_search_status = {
     'completed_at': None
 }
 
+SIMILARITY_THRESHOLD = 0.6 # Define a threshold for relevance
+
 # Helper function to get or create a session ID
 def get_or_create_session_id():
     """Get existing session ID or create a new one"""
@@ -98,47 +101,74 @@ def get_or_create_session_id():
 def index():
     """Main dashboard page"""
     try:
-        # Get session ID
         session_id = get_or_create_session_id()
-        
-        # Get filter parameters
         status = request.args.get('status', 'all')
-        search = request.args.get('search', '')
+        search_query_user = request.args.get('search', '') # Renamed to avoid conflict
         page = int(request.args.get('page', 1))
-        per_page = 12  
-        
-        # Get jobs based on filters
+        per_page = 12
+
         if status == 'all':
-            jobs = db.get_jobs(limit=1000, session_id=session_id)
+            jobs_from_db = db.get_jobs(limit=1000, session_id=session_id)
         else:
-            jobs = db.get_jobs(status=status, limit=1000, session_id=session_id)
+            jobs_from_db = db.get_jobs(status=status, limit=1000, session_id=session_id)
         
-        # Apply search filter
-        if search:
-            jobs = [j for j in jobs if search.lower() in 
-                   f"{j.get('job_title', '')} {j.get('company', '')} {j.get('description', '')}".lower()]
-        
-        # Pagination
+        jobs_to_display = jobs_from_db
+        final_filtered_jobs_for_accuracy_check = []
+
+        if search_query_user:
+            jobs_after_keyword_search = [
+                j for j in jobs_from_db if search_query_user.lower() in
+                f"{j.get('job_title', '')} {j.get('company', '')} {j.get('description', '')}".lower()
+            ]
+            jobs_to_display = jobs_after_keyword_search
+            final_filtered_jobs_for_accuracy_check = jobs_after_keyword_search
+            
+            if final_filtered_jobs_for_accuracy_check and search_query_user:
+                query_embedding = get_embedding(search_query_user)
+                num_relevant_nlp = 0
+                
+                for job in final_filtered_jobs_for_accuracy_check:
+                    job_text = f"{job.get('job_title', '')} {job.get('description', '')}"
+                    if not job_text.strip():
+                        continue
+                    job_embedding = get_embedding(job_text)
+                    similarity = calculate_cosine_similarity(query_embedding, job_embedding)
+                    
+                    if similarity >= SIMILARITY_THRESHOLD:
+                        num_relevant_nlp += 1
+                
+                num_shown = len(final_filtered_jobs_for_accuracy_check)
+                if num_shown > 0:
+                    ai_accuracy = (num_relevant_nlp / num_shown) * 100
+                    db.log_search_event(session_id, search_query_user, num_shown, num_relevant_nlp, ai_accuracy)
+                else:
+                    db.log_search_event(session_id, search_query_user, 0, 0, 0.0) 
+            elif search_query_user: 
+                 db.log_search_event(session_id, search_query_user, 0, 0, 0.0)
+            
+        else:
+            final_filtered_jobs_for_accuracy_check = jobs_from_db 
+            jobs_to_display = jobs_from_db
+
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
-        paginated_jobs = jobs[start_idx:end_idx]
+        paginated_jobs = jobs_to_display[start_idx:end_idx]
         
-        # Get statistics
-        stats = db.get_job_stats(session_id=session_id)
-        
+        stats_data = db.get_job_stats(session_id=session_id) 
+
         return render_template('index.html',
                              jobs=paginated_jobs,
-                             total_jobs_count=len(jobs),  # Total jobs matching current filters
-                             stats=stats,
+                             total_jobs_count=len(jobs_to_display),
+                             stats=stats_data, 
                              job_statuses=JOB_STATUS,
                              current_status=status,
-                             search_query=search,
+                             search_query=search_query_user, 
                              page=page,
-                             total_pages=(len(jobs) + per_page - 1) // per_page)
-        
+                             total_pages=(len(jobs_to_display) + per_page - 1) // per_page)
+
     except Exception as e:
         logger.error(f"Error loading dashboard: {e}")
-        return render_template('index.html', jobs=[], stats={}, job_statuses=JOB_STATUS)
+        return render_template('index.html', jobs=[], stats={}, job_statuses=JOB_STATUS, search_query=search_query_user if 'search_query_user' in locals() else '')
 
 
 @app.route('/job/<job_id>')
@@ -217,34 +247,41 @@ def statistics():
     """Show detailed statistics about jobs"""
     try:
         session_id = get_or_create_session_id()
-        stats = db.get_job_stats(session_id=session_id)
+        stats_data = db.get_job_stats(session_id=session_id) # Renamed stats to stats_data
         
-        # Get additional statistics
+        # Enhanced search analytics
+        search_analytics = {
+            'average_accuracy': db.get_average_search_accuracy(session_id=session_id),
+            'search_history': db.get_search_history(session_id=session_id, limit=10),
+            'accuracy_trends': db.get_search_accuracy_trends(session_id=session_id, days=30),
+            'accuracy_distribution': db.get_search_accuracy_distribution(session_id=session_id),
+            'query_analytics': db.get_search_query_analytics(session_id=session_id, limit=10),
+            'performance_summary': db.get_search_performance_summary(session_id=session_id)
+        }
+        
         jobs = db.get_jobs(limit=1000, session_id=session_id)
         
-        # Calculate more detailed stats
         recent_stats = {
             'last_24h': len([j for j in jobs if _is_recent(j.get('extracted_at'), hours=24)]),
             'last_week': len([j for j in jobs if _is_recent(j.get('extracted_at'), days=7)]),
             'last_month': len([j for j in jobs if _is_recent(j.get('extracted_at'), days=30)])
         }
         
-        # Job type distribution
         job_types = {}
         for job in jobs:
             job_type = job.get('job_type', 'Unknown')
             job_types[job_type] = job_types.get(job_type, 0) + 1
         
-        # Convert dict_items to regular dicts for template compatibility
-        if 'top_companies' in stats:
-            stats['top_companies'] = dict(list(stats['top_companies'].items())[:10])
-        if 'top_locations' in stats:
-            stats['top_locations'] = dict(list(stats['top_locations'].items())[:10])
+        if 'top_companies' in stats_data:
+            stats_data['top_companies'] = dict(list(stats_data['top_companies'].items())[:10])
+        if 'top_locations' in stats_data:
+            stats_data['top_locations'] = dict(list(stats_data['top_locations'].items())[:10])
             
         return render_template('statistics.html',
-                             stats=stats,
+                             stats=stats_data, # Use renamed variable
                              recent_stats=recent_stats,
-                             job_types=job_types)
+                             job_types=job_types,
+                             search_analytics=search_analytics)
         
     except Exception as e:
         logger.error(f"Error loading statistics: {e}")
@@ -360,6 +397,7 @@ def api_realtime_search():
             'progress': 0,
             'current_action': 'Initializing search',
             'current_phase': 'init',
+            'search_query': search_term,  # Store search query for AI accuracy calculation
             'results': {},
             'error': None,
             'started_at': datetime.now().isoformat(),
@@ -641,6 +679,8 @@ def run_realtime_search(search_term, max_results, session_id=None):
         
         stored_count = 0
         duplicates_count = 0
+        converted_jobs = []  # Initialize outside the if block
+        
         if jobs: # Ensure there are jobs to store
             # Convert ALL jobs at once from LinkedIn API format to standard format
             try:
@@ -678,6 +718,45 @@ def run_realtime_search(search_term, max_results, session_id=None):
                 logger.debug(f"🔍 Raw jobs data that failed conversion: {json.dumps(jobs[:2], indent=2)}...")  # Log first 2 jobs only
         
         logger.info(f"💾 Stored {stored_count}/{len(jobs) if jobs else 0} jobs in the database.")
+        
+        # Calculate and log AI search accuracy for the real-time search
+        search_query = realtime_search_status.get('search_query', '')
+        if search_query and converted_jobs:
+            try:
+                logger.info(f"🤖 Calculating AI search accuracy for query: '{search_query}'")
+                
+                # Import NLP functions
+                from .nlp_utils import get_embedding, calculate_cosine_similarity
+                
+                query_embedding = get_embedding(search_query)
+                num_relevant_nlp = 0
+                
+                for job in converted_jobs:
+                    job_text = f"{job.get('job_title', '')} {job.get('description', '')}"
+                    if not job_text.strip():
+                        continue
+                    job_embedding = get_embedding(job_text)
+                    similarity = calculate_cosine_similarity(query_embedding, job_embedding)
+                    
+                    if similarity >= SIMILARITY_THRESHOLD:
+                        num_relevant_nlp += 1
+                
+                num_shown = len(converted_jobs)
+                if num_shown > 0:
+                    ai_accuracy = (num_relevant_nlp / num_shown) * 100
+                    db.log_search_event(session_id, search_query, num_shown, num_relevant_nlp, ai_accuracy)
+                    logger.info(f"✅ Logged search accuracy: {ai_accuracy:.2f}% ({num_relevant_nlp}/{num_shown} relevant)")
+                else:
+                    db.log_search_event(session_id, search_query, 0, 0, 0.0)
+                    logger.info("📊 Logged search event with 0 results")
+                    
+            except Exception as e:
+                logger.error(f"❌ Error calculating search accuracy: {e}")
+                # Log the search event anyway, even without accuracy
+                try:
+                    db.log_search_event(session_id, search_query, len(converted_jobs) if converted_jobs else 0, 0, 0.0)
+                except Exception as log_error:
+                    logger.error(f"❌ Error logging search event: {log_error}")
         
         # Update final results
         realtime_search_status['results'].update({

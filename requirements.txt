@@ -32,3 +32,7 @@ aiohttp>=3.8.0
 # Deployment
 gunicorn==21.2.0
 
+# NLP-based similarity calculations
+sentence-transformers
+scikit-learn
+

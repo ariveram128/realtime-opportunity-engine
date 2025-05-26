@@ -60,7 +60,7 @@
         padding: 0;
         position: relative;
     }
-
+    
     /* Particles Container */
     #particles-js {
         position: fixed;
@@ -425,33 +425,44 @@
     <div class="dashboard-header fade-in">
     <h1>
             <i class="fas fa-chart-line me-2"></i>
-        Analytics Dashboard
-    </h1>
+            Analytics Dashboard
+        </h1>
     <p>Comprehensive insights into your job search performance and opportunities</p>
-</div>
+    </div>
 
-    <!-- Overview Stats Cards -->
+    <!-- Overall Job Statistics & System Performance -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stats-card fade-in delay-1 float float-1">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon icon-opportunities">
-                        <i class="fas fa-briefcase"></i>
-                    </div>
+        <!-- Total Jobs Card -->
+        <div class="col-xl-3 col-md-6 mb-4 fade-in-up" style="animation-delay: 0.1s;">
+            <div class="stats-card h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-primary me-3"><i class="fas fa-briefcase"></i></div>
                     <div>
-                        <div class="stats-number">{{ stats.total_jobs }}</div>
+                        <div class="stats-number">{{ stats.total_jobs|default(0) }}</div>
                         <div class="stats-label">Total Opportunities</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stats-card fade-in delay-2 float float-2">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon icon-applications">
-                        <i class="fas fa-paper-plane"></i>
+        <!-- Average Search Accuracy Card (NEW) -->
+        <div class="col-xl-3 col-md-6 mb-4 fade-in-up" style="animation-delay: 0.2s;">
+            <div class="stats-card h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-success me-3"><i class="fas fa-bullseye"></i></div>
+                    <div>
+                        <div class="stats-number">{{ search_analytics.average_accuracy|round(2) }}%</div>
+                        <div class="stats-label">Avg. Search Accuracy</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applied Jobs Card -->
+        <div class="col-xl-3 col-md-6 mb-4 fade-in-up" style="animation-delay: 0.3s;">
+            <div class="stats-card h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-info me-3"><i class="fas fa-paper-plane"></i></div>
                     <div>
                         <div class="stats-number">{{ stats.by_status.get('applied', 0) }}</div>
                         <div class="stats-label">Applications Sent</div>
@@ -460,29 +471,14 @@
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stats-card fade-in delay-3 float float-3">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon icon-interviews">
-                        <i class="fas fa-handshake"></i>
-                    </div>
+        <!-- Interviews Card -->
+        <div class="col-xl-3 col-md-6 mb-4 fade-in-up" style="animation-delay: 0.4s;">
+            <div class="stats-card h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stats-icon bg-warning me-3"><i class="fas fa-handshake"></i></div>
                     <div>
                         <div class="stats-number">{{ stats.by_status.get('interview', 0) }}</div>
                         <div class="stats-label">Interviews Scheduled</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-4">
-            <div class="stats-card fade-in delay-4 float float-1">
-                <div class="d-flex align-items-center">
-                    <div class="stats-icon icon-discoveries">
-                        <i class="fas fa-calendar-week"></i>
-                    </div>
-                    <div>
-                        <div class="stats-number">{{ stats.recent_jobs }}</div>
-                        <div class="stats-label">Recent Discoveries</div>
                     </div>
                 </div>
             </div>
@@ -491,81 +487,81 @@
 
     <!-- Reorganized Charts and Detailed Analysis Row -->
     <div class="row mb-4">
-        <!-- Status Distribution Chart -->
+            <!-- Status Distribution Chart -->
         <div class="col-lg-7 mb-4">
             <div class="chart-card fade-in delay-1 float float-2" style="height: auto;">
                 <div class="chart-header">
                     <h6><i class="fas fa-chart-pie me-2"></i>Application Status Distribution</h6>
-                </div>
+                    </div>
                 <div class="chart-body" style="min-height: 350px;">
                     <canvas id="statusChart"></canvas>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <!-- Detailed Status Analysis Table -->
         <div class="col-lg-5 mb-4">
             <div class="chart-card fade-in delay-2 float float-1" style="height: auto;">
                 <div class="chart-header">
-                    <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
-                </div>
+                        <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
+                    </div>
                 <div class="chart-body">
-                    {% if stats.by_status %}
+                        {% if stats.by_status %}
                     <table class="stats-table table-borderless mb-0">
-                            <thead>
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th class="text-center">Count</th>
+                                        <th class="text-center">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status, count in stats.by_status.items() %}
                                 <tr>
-                                    <th>Status</th>
-                                    <th class="text-center">Count</th>
-                                    <th class="text-center">Percentage</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for status, count in stats.by_status.items() %}
-                                <tr>
-                                    <td>
+                                        <td>
                                     <span class="status-badge {{ 'bg-applied' if status == 'applied' else 'bg-new' if status == 'new' else 'bg-interested' if status == 'interested' else 'bg-interview' if status == 'interview' else 'bg-rejected' }}">
-                                            {{ status.replace('_', ' ').title() }}
-                                        </span>
-                                    </td>
-                                    <td class="text-center fw-bold">{{ count }}</td>
-                                    <td class="text-center">
+                                                {{ status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center fw-bold">{{ count }}</td>
+                                        <td class="text-center">
                                     <span>
-                                            {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
+                                                {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-chart-bar fa-3x mb-3 opacity-50"></i>
                             <p>No status data available yet</p>
-                        </div>
-                    {% endif %}
+                            </div>
+                        {% endif %}
+                </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
     <!-- Top Companies and Locations Row -->
     <div class="row mb-4">
         <!-- Top Target Companies -->
-        <div class="col-lg-6 mb-4">
+            <div class="col-lg-6 mb-4">
             <div class="chart-card fade-in delay-1 float float-3">
                 <div class="chart-header">
                     <h6><i class="fas fa-building me-2"></i>Top Target Companies</h6>
-                </div>
+                    </div>
                 <div class="chart-body">
                     {% if stats.top_companies %}
                         {% for company, count in (stats.top_companies.items() | list)[:10] %}
                         <div class="data-list-item">
-                            <div class="d-flex align-items-center flex-grow-1">
+                                <div class="d-flex align-items-center flex-grow-1">
                                 <i class="fas fa-building me-3 text-info"></i>
                                 <span style="color: var(--text-medium);">{{ company }}</span>
-                            </div>
+                                    </div>
                             <div class="data-badge">{{ count }}</div>
-                        </div>
+                                </div>
                         {% endfor %}
                     {% else %}
                         <div class="text-center text-muted py-4">
@@ -592,63 +588,245 @@
                                 <span style="color: var(--text-medium);">{{ location }}</span>
                             </div>
                             <div class="data-badge">{{ count }}</div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-map fa-3x mb-3 opacity-50"></i>
                             <p>No location data available yet</p>
-                        </div>
-                    {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Success Metrics -->
     {% if stats.total_jobs > 0 %}
     <div class="row mb-4">
-        <div class="col-12">
+            <div class="col-12">
             <div class="chart-card fade-in delay-1">
                 <div class="chart-header">
                     <h6><i class="fas fa-trophy me-2"></i>Success Rate Metrics</h6>
-                </div>
+                    </div>
                 <div class="chart-body">
                     <div class="row text-center">
                         <div class="col-md-3 col-6 mb-4">
                             <div class="metric-card float float-1">
                                 <div class="metric-value primary">
                                     {{ "%.1f"|format((stats.by_status.get('applied', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
-                                </div>
+                                    </div>
                                 <div class="metric-label">Application Rate</div>
                                 <small class="text-muted">Jobs applied to</small>
+                                </div>
                             </div>
-                        </div>
                         <div class="col-md-3 col-6 mb-4">
                             <div class="metric-card float float-2">
                                 <div class="metric-value success">
                                     {{ "%.1f"|format((stats.by_status.get('interview', 0) / stats.by_status.get('applied', 1) * 100) if stats.by_status.get('applied', 0) > 0 else 0) }}%
-                                </div>
+                                    </div>
                                 <div class="metric-label">Interview Rate</div>
                                 <small class="text-muted">From applications</small>
+                                </div>
                             </div>
-                        </div>
                         <div class="col-md-3 col-6 mb-4">
                             <div class="metric-card float float-3">
                                 <div class="metric-value info">
                                     {{ "%.1f"|format((stats.by_status.get('interested', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
-                                </div>
+                                    </div>
                                 <div class="metric-label">Interest Rate</div>
                                 <small class="text-muted">Jobs of interest</small>
+                                </div>
                             </div>
-                        </div>
                         <div class="col-md-3 col-6 mb-4">
                             <div class="metric-card float float-1">
                                 <div class="metric-value warning">
                                     {{ "%.1f"|format((stats.by_status.get('rejected', 0) / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
-                                </div>
+                                    </div>
                                 <div class="metric-label">Rejection Rate</div>
                                 <small class="text-muted">Learning opportunities</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Search Analytics Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-card fade-in delay-1">
+                <div class="chart-header">
+                    <h6><i class="fas fa-search me-2"></i>Search Analytics Dashboard</h6>
+                </div>
+                <div class="chart-body">
+                    <!-- Search Performance Summary -->
+                    {% if search_analytics.performance_summary.total_searches > 0 %}
+                    <div class="row mb-4">
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-1">
+                                <div class="metric-value primary">{{ search_analytics.performance_summary.total_searches }}</div>
+                                <div class="metric-label">Total Searches</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-2">
+                                <div class="metric-value success">{{ search_analytics.performance_summary.avg_accuracy }}%</div>
+                                <div class="metric-label">Avg Accuracy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-3">
+                                <div class="metric-value info">{{ search_analytics.performance_summary.max_accuracy }}%</div>
+                                <div class="metric-label">Best Accuracy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-1">
+                                <div class="metric-value warning">{{ search_analytics.performance_summary.avg_results_shown|round(1) }}</div>
+                                <div class="metric-label">Avg Results</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-2">
+                                <div class="metric-value success">{{ search_analytics.performance_summary.avg_relevant_results|round(1) }}</div>
+                                <div class="metric-label">Avg Relevant</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6 mb-3">
+                            <div class="metric-card float float-3">
+                                <div class="metric-value primary">{{ search_analytics.performance_summary.unique_queries }}</div>
+                                <div class="metric-label">Unique Queries</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Search Analytics Charts Row -->
+                    <div class="row">
+                        <!-- Search Accuracy Trends -->
+                        <div class="col-lg-8 mb-4">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h6><i class="fas fa-chart-line me-2"></i>Search Accuracy Trends (Last 30 Days)</h6>
+                                </div>
+                                <div class="chart-body" style="min-height: 300px;">
+                                    {% if search_analytics.accuracy_trends %}
+                                    <canvas id="accuracyTrendsChart"></canvas>
+                                    {% else %}
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-chart-line fa-3x mb-3 opacity-50"></i>
+                                        <p>No trend data available yet</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accuracy Distribution -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h6><i class="fas fa-chart-pie me-2"></i>Accuracy Distribution</h6>
+                                </div>
+                                <div class="chart-body" style="min-height: 300px;">
+                                    {% if search_analytics.accuracy_distribution %}
+                                    <canvas id="accuracyDistributionChart"></canvas>
+                                    {% else %}
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-chart-pie fa-3x mb-3 opacity-50"></i>
+                                        <p>No distribution data available yet</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Query Analytics and History Row -->
+                    <div class="row">
+                        <!-- Top Search Queries -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h6><i class="fas fa-search-plus me-2"></i>Most Searched Queries</h6>
+                                </div>
+                                <div class="chart-body">
+                                    {% if search_analytics.query_analytics %}
+                                    <div class="table-responsive">
+                                        <table class="stats-table table-borderless mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Query</th>
+                                                    <th class="text-center">Count</th>
+                                                    <th class="text-center">Avg Accuracy</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for query in search_analytics.query_analytics[:5] %}
+                                                <tr>
+                                                    <td>
+                                                        <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ query.query }}">{{ query.query }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="data-badge">{{ query.search_count }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="fw-bold {% if query.avg_accuracy >= 75 %}text-success{% elif query.avg_accuracy >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                                            {{ query.avg_accuracy }}%
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-search fa-3x mb-3 opacity-50"></i>
+                                        <p>No query data available yet</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Search History -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h6><i class="fas fa-history me-2"></i>Recent Search History</h6>
+                                </div>
+                                <div class="chart-body">
+                                    {% if search_analytics.search_history %}
+                                    <div class="search-history-list">
+                                        {% for search in search_analytics.search_history[:8] %}
+                                        <div class="data-list-item mb-2">
+                                            <div class="d-flex align-items-center flex-grow-1">
+                                                <i class="fas fa-search me-3 text-info"></i>
+                                                <div class="flex-grow-1">
+                                                    <div class="text-truncate" style="max-width: 200px;" title="{{ search.query }}">{{ search.query }}</div>
+                                                    <small class="text-muted">{{ search.timestamp[:16] }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="{% if search.accuracy >= 75 %}text-success{% elif search.accuracy >= 50 %}text-warning{% else %}text-danger{% endif %} fw-bold">
+                                                    {{ search.accuracy|round(1) }}%
+                                                </div>
+                                                <small class="text-muted">{{ search.relevant_results }}/{{ search.results_shown }}</small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-history fa-3x mb-3 opacity-50"></i>
+                                        <p>No search history available yet</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -656,7 +834,6 @@
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Back to Dashboard -->
     <div class="text-center mt-4 mb-5">
@@ -670,7 +847,18 @@
 <script type="application/json" id="chartData">
     {
         "statusLabels": [{% for status in stats.by_status.keys() %}"{{ status.replace('_', ' ').title() }}"{% if not loop.last %},{% endif %}{% endfor %}],
-        "statusValues": [{% for count in stats.by_status.values() %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}]
+        "statusValues": [{% for count in stats.by_status.values() %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}],
+        "searchAnalytics": {
+            "accuracyTrends": {
+                "labels": [{% for trend in search_analytics.accuracy_trends %}"{{ trend.date }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                "accuracyData": [{% for trend in search_analytics.accuracy_trends %}{{ trend.avg_accuracy }}{% if not loop.last %},{% endif %}{% endfor %}],
+                "searchCountData": [{% for trend in search_analytics.accuracy_trends %}{{ trend.search_count }}{% if not loop.last %},{% endif %}{% endfor %}]
+            },
+            "accuracyDistribution": {
+                "labels": [{% for label in search_analytics.accuracy_distribution.keys() %}"{{ label }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                "data": [{% for count in search_analytics.accuracy_distribution.values() %}{{ count }}{% if not loop.last %},{% endif %}{% endfor %}]
+            }
+        }
     }
 </script>
 {% endblock %}
@@ -765,9 +953,9 @@ document.addEventListener('DOMContentLoaded', function() {
         type: 'doughnut',
         data: {
             labels: chartData.statusLabels,
-            datasets: [{
+    datasets: [{
                 data: chartData.statusValues,
-                backgroundColor: [
+        backgroundColor: [
                     'rgba(75, 111, 255, 0.7)',   /* Accent Blue */
                     'rgba(46, 204, 113, 0.7)',   /* Accent Green */
                     'rgba(155, 89, 182, 0.7)',  /* Violet */
@@ -782,12 +970,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 hoverBorderWidth: 2,
             }]
         },
-        options: {
+    options: {
     responsive: true,
     maintainAspectRatio: false,
             cutout: '65%',
-    plugins: {
-        legend: {
+        plugins: {
+            legend: {
                     position: 'right',
             labels: {
                         color: 'var(--text-medium)', // Use CSS variable for text color
@@ -822,6 +1010,208 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error("Status chart canvas element not found!");
     }
 
+    // Search Analytics Charts
+    if (chartData.searchAnalytics) {
+        // Accuracy Trends Chart
+        var accuracyTrendsCtx = document.getElementById('accuracyTrendsChart');
+        if (accuracyTrendsCtx && chartData.searchAnalytics.accuracyTrends.labels.length > 0) {
+            new Chart(accuracyTrendsCtx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartData.searchAnalytics.accuracyTrends.labels,
+                    datasets: [{
+                        label: 'Search Accuracy (%)',
+                        data: chartData.searchAnalytics.accuracyTrends.accuracyData,
+                        borderColor: 'rgba(46, 204, 113, 0.8)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(46, 204, 113, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Search Count',
+                        data: chartData.searchAnalytics.accuracyTrends.searchCountData,
+                        borderColor: 'rgba(75, 111, 255, 0.8)',
+                        backgroundColor: 'rgba(75, 111, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(75, 111, 255, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 12, weight: '500' }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 11 }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Accuracy (%)',
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 12, weight: '500' }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 11 }
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Search Count',
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 12, weight: '500' }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 11 }
+                            }
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 12, weight: '500' },
+                                padding: 20,
+                                usePointStyle: true,
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14, weight: 'bold', family: 'Inter, sans-serif' },
+                            bodyFont: { size: 12, family: 'Inter, sans-serif' },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.dataset.yAxisID === 'y') {
+                                        label += context.parsed.y + '%';
+                                    } else {
+                                        label += context.parsed.y;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Accuracy Distribution Chart
+        var accuracyDistCtx = document.getElementById('accuracyDistributionChart');
+        if (accuracyDistCtx && chartData.searchAnalytics.accuracyDistribution.labels.length > 0) {
+            new Chart(accuracyDistCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.searchAnalytics.accuracyDistribution.labels,
+                    datasets: [{
+                        data: chartData.searchAnalytics.accuracyDistribution.data,
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',   // Excellent - Green
+                            'rgba(75, 111, 255, 0.8)',   // Good - Blue
+                            'rgba(249, 199, 79, 0.8)',   // Fair - Yellow
+                            'rgba(255, 101, 132, 0.8)'   // Poor - Red
+                        ],
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        borderWidth: 2,
+                        hoverOffset: 10,
+                        hoverBorderColor: 'rgba(255,255,255,0.5)',
+                        hoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '50%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'var(--text-medium)',
+                                font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                                padding: 15,
+                                usePointStyle: true,
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 13, weight: 'bold', family: 'Inter, sans-serif' },
+                            bodyFont: { size: 11, family: 'Inter, sans-serif' },
+                            padding: 10,
+                            cornerRadius: 6,
+                            displayColors: true,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: function(context) {
+                                    var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    var percentage = ((context.parsed * 100) / total).toFixed(1);
+                                    return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     // Animation observer setup
     var observerOptions = {
     threshold: 0.1,
@@ -832,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         entries.forEach(function(entry) {
         if (entry.isIntersecting) {
                 if (entry.target.classList.contains('fade-in')) {
-                    entry.target.style.animationPlayState = 'running';
+            entry.target.style.animationPlayState = 'running';
                     // Apply delay if specified via class
                     if (entry.target.classList.contains('delay-1')) entry.target.style.animationDelay = '0.1s';
                     else if (entry.target.classList.contains('delay-2')) entry.target.style.animationDelay = '0.2s';
@@ -849,4 +1239,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %} 
+{% endblock %}
