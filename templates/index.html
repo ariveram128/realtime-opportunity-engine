@@ -1994,15 +1994,56 @@
     }
 
     .glassmorphic-result-number {
-        font-size: 1.2rem;
+        font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.25rem;
+        color: var(--accent-cyan);
+        text-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
+        animation: float 3s ease-in-out infinite;
     }
 
     .glassmorphic-result-label {
-        font-size: 0.8rem;
-        font-weight: 500;
+        font-size: 0.85rem;
         color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .glassmorphic-result-stat {
+        padding: 1rem;
+        transition: all 0.3s ease;
+        transform: translateY(0);
+    }
+    
+    .glassmorphic-result-stat:hover {
+        transform: translateY(-5px);
+    }
+    
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    .glassmorphic-success-icon {
+        font-size: 2rem;
+        color: var(--success-color);
+        margin-bottom: 1rem;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.7; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+        100% { opacity: 0.7; transform: scale(1); }
+    }
+
+    .glassmorphic-success-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--success-color);
+        margin-bottom: 1.5rem;
+        text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
     }
 
     .glassmorphic-btn-primary {
@@ -2550,6 +2591,7 @@
                                     </div>
                                 </div>
                                 <h5 id="discoveryCurrentPhase" class="phase-indicator mt-3 text-white">Starting job discovery...</h5>
+                                <p id="discoveryTip" class="text-white-50 mt-2" style="min-height: 2.5em; font-style: italic;"></p>
                             </div>
                             
                             <div class="glassmorphic-progress-wrapper">
@@ -2597,29 +2639,30 @@
                     
                     <!-- Search Results -->
                     <div id="discoveryResults" style="display: none;">
-                        <div class="glassmorphic-results-header">
-                            <h5 class="fw-bold text-success mb-3">
-                                <i class="fas fa-check-circle me-2"></i>Job Discovery Complete!
-                            </h5>
-                            <div class="glassmorphic-summary-stats">
-                                <div class="row g-3 text-center">
-                                    <div class="col-4">
-                                        <div class="glassmorphic-result-stat">
-                                            <div class="number text-primary" id="finalUrlsFound">0</div>
-                                            <div class="label text-white-50">URLs Discovered</div>
-                                        </div>
+                        <div class="text-center mb-4">
+                            <div class="glassmorphic-success-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h4 class="glassmorphic-success-title">Job Discovery Complete!</h4>
+                        </div>
+                        <div class="glassmorphic-summary-stats">
+                            <div class="row g-4 text-center">
+                                <div class="col-4">
+                                    <div class="glassmorphic-result-stat">
+                                        <div class="glassmorphic-result-number" id="finalUrlsFound">0</div>
+                                        <div class="glassmorphic-result-label">URLs Discovered</div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="glassmorphic-result-stat">
-                                            <div class="number text-success" id="finalJobsAdded">0</div>
-                                            <div class="label text-white-50">New Jobs Added</div>
-                                        </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="glassmorphic-result-stat">
+                                        <div class="glassmorphic-result-number" id="finalJobsAdded">0</div>
+                                        <div class="glassmorphic-result-label">New Jobs Added</div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="glassmorphic-result-stat">
-                                            <div class="number text-info" id="finalDuplicates">0</div>
-                                            <div class="label text-white-50">Duplicates Skipped</div>
-                                        </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="glassmorphic-result-stat">
+                                        <div class="glassmorphic-result-number" id="finalDuplicates">0</div>
+                                        <div class="glassmorphic-result-label">Duplicates Skipped</div>
                                     </div>
                                 </div>
                             </div>
@@ -2643,9 +2686,6 @@
                         Ready to discover fresh job opportunities
                     </div>
                     <div>
-                        <button type="button" class="btn btn-outline-light me-2" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Close
-                        </button>
                         <button type="button" class="btn btn-primary glassmorphic-btn-primary" id="startDiscoveryBtn" onclick="startJobDiscovery()">
                             <i class="fas fa-rocket me-2"></i>Start Discovery
                         </button>
@@ -2804,6 +2844,35 @@
 
 {% block extra_scripts %}
 <script>
+let ellipsisCounter = 0;
+const ellipsisStates = ['', ' .', ' ..', ' ...'];
+const jobSearchTips = [
+    "Polishing your resume... a shine brightens your prospects!",
+    "Networking like a pro... connections can open doors!",
+    "Tailoring your cover letter... personalization makes a difference!",
+    "Researching company culture... find your perfect fit!",
+    "Preparing for interviews... practice makes perfect!",
+    "Optimizing your LinkedIn profile... make a great first impression!",
+    "Discovering hidden job markets... opportunities are everywhere!",
+    "Crafting your elevator pitch... be ready to impress!",
+    "Setting up job alerts... stay ahead of the curve!",
+    "Following up on applications... persistence pays off!",
+    "Building your personal brand... showcase your unique talents!",
+    "Expanding your skillset... continuous learning is key!",
+    "Gathering industry insights... knowledge is power!",
+    "Scanning job boards with AI precision...",
+    "Uncovering exclusive opportunities just for you...",
+    "Our AI is working hard to find your dream job...",
+    "Analyzing thousands of job postings in real-time...",
+    "Matching your skills with the perfect roles...",
+    "Hold tight, your next career move is loading...",
+    "Did you know? A well-crafted resume increases your chances by 60%!",
+    "Pro Tip: Customize your application for each role.",
+    "Our algorithms are sifting through opportunities...",
+    "Fetching the latest job listings from top companies...",
+    "Connecting you with your future, one job at a time..."
+];
+
 function sortJobs(criteria) {
     // Try to find both possible job listing containers
     let jobListings = document.getElementById('job-listings') || document.querySelector('.job-listings-container');
@@ -4051,6 +4120,20 @@ function updateDiscoveryProgressFromStatus(data) {
         const elapsed = Math.floor((Date.now() - discoveryStartTime) / 1000);
         updateDiscoveryModalStatus(`Discovery running... ${elapsed}s elapsed`);
     }
+
+    // Update job search tip
+    if (data.is_running && !data.error) {
+        const tipElement = document.getElementById('discoveryTip');
+        if (tipElement) {
+            const randomTip = jobSearchTips[Math.floor(Math.random() * jobSearchTips.length)];
+            tipElement.textContent = randomTip;
+            tipElement.style.opacity = '0'; // Start faded out
+            setTimeout(() => { tipElement.style.transition = 'opacity 0.5s ease-in-out'; tipElement.style.opacity = '1'; }, 100); // Fade in
+        }
+    } else {
+        const tipElement = document.getElementById('discoveryTip');
+        if (tipElement) tipElement.textContent = ''; // Clear tip if not running or error
+    }
 }
 
 function updateDiscoveryProgress(percentage, message) {
@@ -4058,6 +4141,9 @@ function updateDiscoveryProgress(percentage, message) {
     const progressText = document.getElementById('discoveryProgressText');
     const phaseElement = document.getElementById('discoveryCurrentPhase');
     
+    const currentEllipsis = ellipsisStates[ellipsisCounter];
+    ellipsisCounter = (ellipsisCounter + 1) % ellipsisStates.length;
+
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
         progressBar.setAttribute('aria-valuenow', Math.round(percentage));
@@ -4066,7 +4152,7 @@ function updateDiscoveryProgress(percentage, message) {
         progressText.textContent = `${Math.round(percentage)}%`;
     }
     if (phaseElement) {
-        phaseElement.textContent = message;
+        phaseElement.textContent = message + currentEllipsis;
     }
 }
 
@@ -4105,10 +4191,12 @@ function completeJobDiscovery(data) {
         
         // Update final stats
         const results = data.results || {};
-        document.getElementById('finalUrlsFound').textContent = results.urls_discovered || 0;
-        document.getElementById('finalJobsAdded').textContent = results.jobs_stored || 0;
-        document.getElementById('finalDuplicates').textContent = results.duplicates || 0;
         
+        // Animate stats counters
+        animateCounter('finalUrlsFound', results.urls_discovered || 0);
+        animateCounter('finalJobsAdded', results.jobs_stored || 0);
+        animateCounter('finalDuplicates', results.duplicates || 0);
+
         updateDiscoveryModalStatus(`Discovery complete! Found ${results.jobs_stored || 0} new jobs.`);
         
         // Reset buttons
@@ -4123,6 +4211,10 @@ function completeJobDiscovery(data) {
         // Show success notification
         showEnhancedToast('Discovery Complete', `Found ${results.jobs_stored || 0} new opportunities!`, 'success');
         
+        const tipElement = document.getElementById('discoveryTip');
+        if (tipElement) tipElement.textContent = ''; // Clear the tip
+        ellipsisCounter = 0; // Reset ellipsis
+
     }, 1000);
 }
 
@@ -4138,6 +4230,10 @@ function showDiscoveryError(error) {
     
     updateDiscoveryModalStatus('Discovery failed - ready to try again');
     showEnhancedToast('Discovery Failed', error, 'error');
+
+    const tipElement = document.getElementById('discoveryTip');
+    if (tipElement) tipElement.textContent = ''; // Clear the tip
+    ellipsisCounter = 0; // Reset ellipsis
 }
 
 function cancelJobDiscovery() {
@@ -4593,6 +4689,35 @@ function decrementStepper(inputId) {
     if (currentValue > Math.max(min, 10)) {
         input.value = currentValue - 10;
     }
+}
+
+function animateCounter(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    let startValue = 0;
+    const duration = 1500;
+    const startTime = performance.now();
+    
+    function updateCounter(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        
+        // Easing function for a more natural counting effect
+        const easeOutQuad = progress * (2 - progress);
+        
+        const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuad);
+        element.textContent = currentValue;
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+        } else {
+            // Ensure the final value is exactly the target
+            element.textContent = targetValue;
+        }
+    }
+    
+    requestAnimationFrame(updateCounter);
 }
 </script>
 

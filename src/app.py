@@ -411,8 +411,112 @@ def run_realtime_search(search_term, max_results):
             raise Exception("No snapshot_id received from LinkedIn job discovery")
             
         logger.info(f"📊 LinkedIn job discovery initiated. Snapshot ID: {snapshot_id}")
-        realtime_search_status['current_phase'] = f'Polling for results (Snapshot ID: {snapshot_id[:10]}...). This may take a few minutes.'
+        
+        # Initialize rotating messages system
+        import random
+        import time
+        
+        job_search_tips = [
+            "💡 Tip: Tailor your resume for each application to increase your chances!",
+            "🎯 Pro tip: Research the company culture before applying",
+            "⚡ Did you know? 70% of jobs are never posted publicly - networking is key!",
+            "📝 Quick tip: Use action verbs in your resume (achieved, implemented, led)",
+            "🌟 Remember: Quality applications beat quantity every time",
+            "🔍 Insight: LinkedIn is 40x more effective for B2B lead generation than other platforms",
+            "💼 Career hack: Follow up on applications after 1-2 weeks",
+            "🎓 Fun fact: Continuous learning makes you 5x more likely to get promoted",
+            "🤝 Network tip: Attend virtual industry events and webinars",
+            "📊 Analytics show: Personalized cover letters increase response rates by 50%",
+            "🚀 Success strategy: Set up Google Alerts for companies you're interested in",
+            "💪 Motivation: Every rejection brings you one step closer to the perfect job",
+            "🎨 Creative tip: Build a personal portfolio website to showcase your work",
+            "📱 Modern approach: Use LinkedIn's 'Open to Work' feature strategically",
+            "⏰ Timing matters: Tuesday-Thursday mornings have highest application response rates",
+            "🧠 Interview prep: Practice the STAR method for behavioral questions",
+            "📈 Career growth: Ask about professional development opportunities in interviews",
+            "🌐 Global insight: Remote work has opened 5x more opportunities than before",
+            "💡 Innovation tip: Highlight your problem-solving skills with specific examples",
+            "🎯 Targeting advice: Focus on roles that match 80% of your skills, not 100%",
+            "🔥 Hot tip: Company employees are 5x more likely to respond to connection requests",
+            "📚 Learning: Stay updated with industry trends and mention them in interviews",
+            "⭐ Standout strategy: Create case studies of your past work achievements",
+            "🎪 Interview magic: Prepare thoughtful questions about the role and company",
+            "🌟 Personal brand: Consistency across all platforms increases credibility by 3x",
+            "🔬 Research hack: Use company's recent news and achievements in your conversations",
+            "💎 Value proposition: Clearly articulate what unique value you bring",
+            "🎵 Harmony tip: Align your career goals with the company's mission",
+            "🏆 Achievement focus: Quantify your accomplishments with specific metrics",
+            "🌈 Diversity advantage: Companies with diverse teams are 35% more likely to outperform",
+            "🔐 Insider secret: Referrals account for 40% of all hires",
+            "⚡ Speed matters: Apply within 48 hours of job posting for best results",
+            "🎭 Authenticity wins: Be genuine in interviews - people can sense authenticity",
+            "📋 Organization tip: Use a spreadsheet to track all your applications",
+            "🌱 Growth mindset: Emphasize your willingness to learn and adapt",
+            "🎯 Precision strategy: Customize your LinkedIn headline for each industry",
+            "🚀 Launch pad: Volunteer work can open unexpected career opportunities",
+            "💫 Networking gold: Alumni networks are underutilized career resources",
+            "🎨 Creativity boost: Use infographics in your resume for visual impact",
+            "📞 Communication: Follow up calls show initiative and genuine interest",
+            "🏅 Excellence standard: Proofread everything - typos can cost opportunities",
+            "🌟 Confidence builder: Practice your elevator pitch until it's natural",
+            "🔍 Deep dive: Research interviewer backgrounds on LinkedIn beforehand",
+            "💡 Illumination: Show enthusiasm for the role and company mission",
+            "🎪 Performance art: Job searching is a skill that improves with practice"
+        ]
+        
+        motivational_messages = [
+            "🌟 Discovering your next career opportunity...",
+            "🚀 Launching search engines across the web...",
+            "🎯 Targeting the perfect positions for you...",
+            "⚡ Scanning thousands of job listings...",
+            "🔍 Filtering through opportunities like a pro...",
+            "💼 Building your pathway to success...",
+            "🌈 Creating connections between you and great companies...",
+            "🏆 Hunting for roles that match your brilliance...",
+            "⭐ Mapping out your career constellation...",
+            "🎨 Crafting your professional future...",
+            "🔥 Igniting opportunities in your field...",
+            "💎 Mining for career gems...",
+            "🌱 Growing your professional network...",
+            "🎪 Orchestrating your career symphony...",
+            "🚀 Propelling your career to new heights...",
+            "⚡ Energizing your job search with AI power...",
+            "🌟 Illuminating hidden opportunities...",
+            "🎯 Precision-targeting your ideal roles...",
+            "💫 Aligning stars for your career success...",
+            "🔮 Revealing your professional destiny..."
+        ]
+        
+        technical_insights = [
+            "🤖 AI engines are analyzing job requirements in real-time...",
+            "📊 Machine learning algorithms are ranking opportunities...",
+            "⚙️ Advanced scrapers are parsing company data...",
+            "🔧 Optimizing search parameters for maximum relevance...",
+            "📡 Syncing with multiple job platforms simultaneously...",
+            "🧠 Neural networks are matching your skills to roles...",
+            "⚡ Distributed systems are processing thousands of listings...",
+            "🔍 Smart filters are eliminating irrelevant positions...",
+            "📈 Analytics engines are predicting job market trends...",
+            "🌐 Global databases are being cross-referenced...",
+            "💻 Cloud processors are working at lightspeed...",
+            "🔄 Real-time APIs are fetching the latest postings...",
+            "📋 Intelligent parsers are extracting key job details...",
+            "🎪 Sophisticated algorithms are ranking opportunities...",
+            "⚡ High-performance computing is accelerating your search..."
+        ]
+        
+        # Combine all message categories
+        all_messages = job_search_tips + motivational_messages + technical_insights
+        
+        # Select initial random message
+        initial_message = random.choice(all_messages)
+        realtime_search_status['current_phase'] = initial_message
         realtime_search_status['progress'] = 20
+        realtime_search_status['_message_rotation'] = {
+            'messages': all_messages,
+            'last_update': time.time(),
+            'current_index': 0
+        }
 
         # Wait for completion (this method internally polls)
         # Max wait time for _wait_for_completion should be less than the overall timeout to allow for other steps.
@@ -425,11 +529,35 @@ def run_realtime_search(search_term, max_results):
         def progress_callback_for_wait(scraper_progress_data):
             # scraper_progress_data could be a dict {'progress': percentage, 'status_message': '...'}
             progress_percentage = scraper_progress_data.get('progress', 0)
-            status_message = scraper_progress_data.get('status_message', realtime_search_status['current_phase'])
+            
+            # Get rotating message system
+            rotation_data = realtime_search_status.get('_message_rotation', {})
+            messages = rotation_data.get('messages', [])
+            last_update = rotation_data.get('last_update', 0)
+            current_index = rotation_data.get('current_index', 0)
+            
+            # Rotate message every 3-5 seconds
+            current_time = time.time()
+            if messages and (current_time - last_update) > random.uniform(3, 5):
+                current_index = (current_index + 1) % len(messages)
+                realtime_search_status['_message_rotation']['current_index'] = current_index
+                realtime_search_status['_message_rotation']['last_update'] = current_time
+                
+                # Use rotating message with progress
+                rotating_message = messages[current_index]
+                realtime_search_status['current_phase'] = f"{rotating_message} ({progress_percentage}%)"
+            else:
+                # Keep current message but update percentage
+                current_msg = realtime_search_status.get('current_phase', 'Processing...')
+                # Remove old percentage and add new one
+                if '(' in current_msg and current_msg.endswith('%)'):
+                    current_msg = current_msg.rsplit('(', 1)[0].strip()
+                realtime_search_status['current_phase'] = f"{current_msg} ({progress_percentage}%)"
+            
             # Scale BrightData progress (0-100) to fit our overall progress range (e.g., 20-80%)
             realtime_search_status['progress'] = 20 + (progress_percentage * 0.6) 
-            realtime_search_status['current_phase'] = f'Polling: {status_message} ({progress_percentage}%)'
-            logger.info(f"⏳ LinkedIn Polling Update: {status_message} - {progress_percentage}%")
+            
+            logger.info(f"⏳ LinkedIn Polling Update: {progress_percentage}% - {realtime_search_status['current_phase']}")
 
         # The `_wait_for_completion` method needs to be adapted to accept such a callback,
         # or we simply estimate progress here. For now, let's assume it does not take a callback
