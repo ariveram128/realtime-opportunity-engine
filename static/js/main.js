@@ -15,6 +15,9 @@ const AppConfig = {
     },
     api: {
         timeout: 30000
+    },
+    session: {
+        key: 'job_finder_session_id'
     }
 };
 
@@ -131,6 +134,33 @@ class Utils {
             }
             element.textContent = Math.floor(current);
         }, 16);
+    }
+
+    static getSessionId() {
+        // Get session ID from localStorage or create a new one
+        let sessionId = localStorage.getItem(AppConfig.session.key);
+        if (!sessionId) {
+            // If no session ID exists, we'll use the one from the server on first request
+            this.fetchSessionIdFromServer();
+            sessionId = localStorage.getItem(AppConfig.session.key) || 'default';
+        }
+        return sessionId;
+    }
+    
+    static async fetchSessionIdFromServer() {
+        try {
+            const response = await fetch('/api/session');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.session_id) {
+                    localStorage.setItem(AppConfig.session.key, data.session_id);
+                    return data.session_id;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching session ID:', error);
+        }
+        return null;
     }
 }
 
@@ -514,6 +544,20 @@ class MCPSearchManager {
     init() {
         this.setupMCPModal();
         this.setupMCPSearch();
+        this.initializeBrightDataBranding();
+    }
+    
+    initializeBrightDataBranding() {
+        // Add Bright Data challenge branding elements
+        document.querySelectorAll('.mcp-action-badge').forEach(badge => {
+            badge.addEventListener('mouseenter', () => {
+                badge.style.transform = 'scale(1.1)';
+            });
+            
+            badge.addEventListener('mouseleave', () => {
+                badge.style.transform = '';
+            });
+        });
     }
 
     setupMCPModal() {
@@ -521,6 +565,14 @@ class MCPSearchManager {
         if (mcpModal) {
             mcpModal.addEventListener('show.bs.modal', () => {
                 this.resetMCPModalState();
+            });
+            
+            // Add event listeners for MCP action explanations
+            document.querySelectorAll('[data-mcp-action]').forEach(element => {
+                element.addEventListener('click', (e) => {
+                    const action = e.currentTarget.getAttribute('data-mcp-action');
+                    this.showActionExplanation(action);
+                });
             });
         }
     }
@@ -559,7 +611,27 @@ class MCPSearchManager {
         if (form) form.reset();
 
         // Reset progress
-        this.updateMCPProgress(0, 'Ready to start MCP search...');
+        this.updateMCPProgress(0, 'Ready to start Bright Data MCP search...');
+        
+        // Reset action badges
+        document.querySelectorAll('[data-mcp-action]').forEach(badge => {
+            badge.classList.remove('badge-primary');
+            badge.classList.add('badge-secondary');
+        });
+    }
+
+    showActionExplanation(action) {
+        const explanations = {
+            'DISCOVER': 'The DISCOVER action uses AI to find relevant job opportunities across the web, leveraging Bright Data\'s extensive network to identify potential matches.',
+            'ACCESS': 'The ACCESS action navigates complex websites, bypassing challenges that traditional scrapers can\'t handle, to retrieve comprehensive job listings.',
+            'EXTRACT': 'The EXTRACT action uses AI to pull structured data from job listings, ensuring accurate and complete information retrieval.',
+            'INTERACT': 'The INTERACT action analyzes job opportunities using AI, providing personalized recommendations and insights.'
+        };
+        
+        const explanation = explanations[action] || 'This is one of the four key MCP actions powered by Bright Data.';
+        
+        // Show a toast with the explanation
+        Utils.showToast(explanation, 'info', 8000);
     }
 
     async executeMCPSearch() {
@@ -572,6 +644,9 @@ class MCPSearchManager {
         }
 
         try {
+            // Get session ID
+            const sessionId = Utils.getSessionId();
+            
             // Switch to progress view
             this.showMCPProgress();
 
@@ -583,7 +658,8 @@ class MCPSearchManager {
                 },
                 body: JSON.stringify({
                     search_term: searchTerm,
-                    max_results: parseInt(maxResults)
+                    max_results: parseInt(maxResults),
+                    session_id: sessionId
                 })
             });
 
@@ -591,7 +667,7 @@ class MCPSearchManager {
                 const result = await response.json();
                 if (result.success) {
                     this.startMCPStatusPolling();
-                    Utils.showToast('MCP search started successfully', 'success');
+                    Utils.showToast('Bright Data MCP search started successfully', 'success');
                 } else {
                     throw new Error(result.error || 'Failed to start MCP search');
                 }
@@ -701,11 +777,22 @@ class MCPSearchManager {
                 }
             }
         });
+        
+        // Add pulsing animation to current action
+        if (currentAction) {
+            const activeBadges = document.querySelectorAll(`[data-mcp-action="${currentAction}"]`);
+            activeBadges.forEach(badge => {
+                badge.classList.add('active-action');
+                setTimeout(() => {
+                    badge.classList.remove('active-action');
+                }, 2000);
+            });
+        }
     }
 
     updateMCPStatistics(results) {
         const stats = {
-            'discovered-count': results.discovered_jobs || 0,
+            'discovered-count': results.discovered_urls || 0,
             'accessed-count': results.accessed_pages || 0,
             'extracted-count': results.extracted_jobs || 0,
             'analyzed-count': results.analyzed_jobs || 0
@@ -723,16 +810,28 @@ class MCPSearchManager {
         this.showMCPResults();
         
         // Update final statistics
-        this.updateMCPStatistics(status.results);
+        const finalStats = {
+            'discovered-final': status.results.discovered_urls || 0,
+            'accessed-final': status.results.accessed_pages || 0,
+            'extracted-final': status.results.extracted_jobs || 0,
+            'analyzed-final': status.results.analyzed_jobs || 0
+        };
+        
+        Object.entries(finalStats).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                Utils.animateCounter(element, value);
+            }
+        });
         
         // Show completion message
-        Utils.showToast('MCP search completed successfully!', 'success');
+        Utils.showToast('Bright Data MCP search completed successfully!', 'success');
         
         // Update results summary
         const resultsText = document.getElementById('mcpResultsText');
         if (resultsText && status.results) {
             const totalJobs = status.results.analyzed_jobs || 0;
-            resultsText.textContent = `Found and analyzed ${totalJobs} internship opportunities with enhanced AI insights.`;
+            resultsText.textContent = `Found and analyzed ${totalJobs} internship opportunities with Bright Data MCP enhanced AI insights.`;
         }
     }
 
@@ -760,7 +859,7 @@ class MCPSearchManager {
         if (modal) modal.hide();
         
         // Add enhanced filter parameter
-        window.location.href = '/?status=enhanced';
+        window.location.href = '/?status=new';
     }
 }
 
