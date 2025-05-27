@@ -106,6 +106,21 @@ class DatabaseManager:
             cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_status ON {self.jobs_table} (status)')
             cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_extracted_at ON {self.jobs_table} (extracted_at)')
             
+            # Search log table
+            cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS search_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL, -- Or user_id if you have full user auth
+                    search_query TEXT NOT NULL,
+                    num_results_shown INTEGER NOT NULL,
+                    num_relevant_results INTEGER NOT NULL, -- Based on AI similarity threshold
+                    ai_accuracy_percent REAL NOT NULL, -- (num_relevant / num_shown) * 100
+                    search_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_search_log_session ON search_log (session_id)')
+            cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_search_log_query ON search_log (search_query)')
+            
             conn.commit()
             logger.info(f"Database initialized: {self.db_path}")
             
@@ -662,7 +677,247 @@ class DatabaseManager:
             self._conn.close()
             self._conn = None
 
+    def log_search_event(self, session_id: str, query: str, num_shown: int, num_relevant: int, accuracy: float):
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f'''
+                INSERT INTO search_log (session_id, search_query, num_results_shown, num_relevant_results, ai_accuracy_percent)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (session_id, query, num_shown, num_relevant, accuracy))
+            conn.commit()
+            logger.info(f"Logged search event for query '{query}', accuracy: {accuracy:.2f}%")
+            return True
+        except sqlite3.Error as e:
+            logger.error(f"Error logging search event: {e}")
+            return False
+        finally:
+            if close_conn:
+                conn.close()
 
+    def get_average_search_accuracy(self, session_id: str = None) -> float:
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = 'SELECT AVG(ai_accuracy_percent) FROM search_log'
+            params = []
+            if session_id:
+                query += ' WHERE session_id = ?'
+                params.append(session_id)
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            return result[0] if result and result[0] is not None else 0.0
+        except sqlite3.Error as e:
+            logger.error(f"Error getting average search accuracy: {e}")
+            return 0.0
+        finally:
+            if close_conn:
+                conn.close()
+
+    def get_search_history(self, session_id: str = None, limit: int = 50) -> list:
+        """Get recent search history with accuracy metrics"""
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = '''
+                SELECT search_query, num_results_shown, num_relevant_results, 
+                       ai_accuracy_percent, search_timestamp
+                FROM search_log
+            '''
+            params = []
+            if session_id:
+                query += ' WHERE session_id = ?'
+                params.append(session_id)
+            query += ' ORDER BY search_timestamp DESC LIMIT ?'
+            params.append(limit)
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            return [{
+                'query': row[0],
+                'results_shown': row[1],
+                'relevant_results': row[2],
+                'accuracy': row[3],
+                'timestamp': row[4]
+            } for row in results]
+        except sqlite3.Error as e:
+            logger.error(f"Error getting search history: {e}")
+            return []
+        finally:
+            if close_conn:
+                conn.close()
+
+    def get_search_accuracy_trends(self, session_id: str = None, days: int = 30) -> list:
+        """Get search accuracy trends over time"""
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = '''
+                SELECT DATE(search_timestamp) as date, 
+                       AVG(ai_accuracy_percent) as avg_accuracy,
+                       COUNT(*) as search_count
+                FROM search_log
+                WHERE search_timestamp >= datetime('now', '-{} days')
+            '''.format(days)
+            
+            params = []
+            if session_id:
+                query += ' AND session_id = ?'
+                params.append(session_id)
+            
+            query += ' GROUP BY DATE(search_timestamp) ORDER BY date'
+            
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            return [{
+                'date': row[0],
+                'avg_accuracy': round(row[1], 2) if row[1] else 0,
+                'search_count': row[2]
+            } for row in results]
+        except sqlite3.Error as e:
+            logger.error(f"Error getting search accuracy trends: {e}")
+            return []
+        finally:
+            if close_conn:
+                conn.close()
+
+    def get_search_accuracy_distribution(self, session_id: str = None) -> dict:
+        """Get distribution of search accuracy ranges"""
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = '''
+                SELECT 
+                    CASE 
+                        WHEN ai_accuracy_percent >= 90 THEN 'Excellent (90-100%)'
+                        WHEN ai_accuracy_percent >= 75 THEN 'Good (75-89%)'
+                        WHEN ai_accuracy_percent >= 50 THEN 'Fair (50-74%)'
+                        ELSE 'Poor (0-49%)'
+                    END as accuracy_range,
+                    COUNT(*) as count
+                FROM search_log
+            '''
+            
+            params = []
+            if session_id:
+                query += ' WHERE session_id = ?'
+                params.append(session_id)
+            
+            query += ' GROUP BY accuracy_range'
+            
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            distribution = {}
+            for row in results:
+                distribution[row[0]] = row[1]
+            
+            return distribution
+        except sqlite3.Error as e:
+            logger.error(f"Error getting search accuracy distribution: {e}")
+            return {}
+        finally:
+            if close_conn:
+                conn.close()
+
+    def get_search_query_analytics(self, session_id: str = None, limit: int = 20) -> list:
+        """Get analytics for most searched queries"""
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = '''
+                SELECT search_query,
+                       COUNT(*) as search_count,
+                       AVG(ai_accuracy_percent) as avg_accuracy,
+                       AVG(num_results_shown) as avg_results_shown,
+                       AVG(num_relevant_results) as avg_relevant_results
+                FROM search_log
+            '''
+            
+            params = []
+            if session_id:
+                query += ' WHERE session_id = ?'
+                params.append(session_id)
+            
+            query += ' GROUP BY search_query ORDER BY search_count DESC LIMIT ?'
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            
+            return [{
+                'query': row[0],
+                'search_count': row[1],
+                'avg_accuracy': round(row[2], 2) if row[2] else 0,
+                'avg_results_shown': round(row[3], 2) if row[3] else 0,
+                'avg_relevant_results': round(row[4], 2) if row[4] else 0
+            } for row in results]
+        except sqlite3.Error as e:
+            logger.error(f"Error getting search query analytics: {e}")
+            return []
+        finally:
+            if close_conn:
+                conn.close()
+
+    def get_search_performance_summary(self, session_id: str = None) -> dict:
+        """Get overall search performance summary"""
+        conn = self._get_connection()
+        close_conn = not self._conn
+        try:
+            cursor = conn.cursor()
+            query = '''
+                SELECT 
+                    COUNT(*) as total_searches,
+                    AVG(ai_accuracy_percent) as avg_accuracy,
+                    MAX(ai_accuracy_percent) as max_accuracy,
+                    MIN(ai_accuracy_percent) as min_accuracy,
+                    AVG(num_results_shown) as avg_results_shown,
+                    AVG(num_relevant_results) as avg_relevant_results,
+                    COUNT(DISTINCT search_query) as unique_queries
+                FROM search_log
+            '''
+            
+            params = []
+            if session_id:
+                query += ' WHERE session_id = ?'
+                params.append(session_id)
+            
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            
+            if result:
+                return {
+                    'total_searches': result[0] or 0,
+                    'avg_accuracy': round(result[1], 2) if result[1] else 0,
+                    'max_accuracy': round(result[2], 2) if result[2] else 0,
+                    'min_accuracy': round(result[3], 2) if result[3] else 0,
+                    'avg_results_shown': round(result[4], 2) if result[4] else 0,
+                    'avg_relevant_results': round(result[5], 2) if result[5] else 0,
+                    'unique_queries': result[6] or 0
+                }
+            else:
+                return {
+                    'total_searches': 0,
+                    'avg_accuracy': 0,
+                    'max_accuracy': 0,
+                    'min_accuracy': 0,
+                    'avg_results_shown': 0,
+                    'avg_relevant_results': 0,
+                    'unique_queries': 0
+                }
+        except sqlite3.Error as e:
+            logger.error(f"Error getting search performance summary: {e}")
+            return {}
+        finally:
+            if close_conn:
+                conn.close()
+    
 def test_database():
     """Test database functionality"""
     db = DatabaseManager(':memory:')  # Use in-memory database for testing
@@ -699,4 +954,4 @@ def test_database():
 
 
 if __name__ == "__main__":
-    test_database() 
+    test_database()

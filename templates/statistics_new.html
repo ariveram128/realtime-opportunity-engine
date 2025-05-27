@@ -1,0 +1,990 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - AI-Powered Career Discovery Platform{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        /* Award-Winning Color System */
+        --primary-electric: #6366f1;
+        --primary-deep: #4338ca;
+        --primary-light: #a5b4fc;
+        --accent-cyan: #06b6d4;
+        --accent-emerald: #10b981;
+        --accent-amber: #f59e0b;
+        --accent-rose: #f43f5e;
+        --accent-violet: #8b5cf6;
+        
+        /* Sophisticated Neutrals */
+        --neutral-50: #fafafa;
+        --neutral-100: #f5f5f5;
+        --neutral-200: #e5e5e5;
+        --neutral-300: #d4d4d4;
+        --neutral-400: #a3a3a3;
+        --neutral-500: #737373;
+        --neutral-600: #525252;
+        --neutral-700: #404040;
+        --neutral-800: #262626;
+        --neutral-900: #171717;
+        
+        /* Premium Gradients */
+        --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+        --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+        --gradient-glass: linear-gradient(145deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%);
+        --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+        --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        --gradient-danger: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        --gradient-info: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        
+        /* Advanced Shadows */
+        --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        --shadow-heavy: 0 35px 60px -12px rgba(0, 0, 0, 0.4);
+        --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+        --shadow-colored: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
+        
+        /* Glassmorphism Effects */
+        --glass-bg: rgba(255, 255, 255, 0.25);
+        --glass-border: rgba(255, 255, 255, 0.18);
+        --glass-backdrop: blur(20px);
+        
+        /* Advanced Spacing */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        --space-2xl: 3rem;
+        --space-3xl: 4rem;
+        
+        /* Modern Border Radius */
+        --radius-xs: 0.125rem;
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --radius-2xl: 1.5rem;
+        --radius-3xl: 2rem;
+        --radius-full: 9999px;
+        
+        /* Fluid Transitions */
+        --transition-all: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        --transition-elastic: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    /* Award-Winning Global Styling */
+    * {
+        box-sizing: border-box;
+    }
+    
+    body {
+        background: var(--gradient-hero);
+        background-attachment: fixed;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: var(--neutral-800);
+        line-height: 1.7;
+        font-weight: 400;
+        overflow-x: hidden;
+        position: relative;
+        min-height: 100vh;
+    }
+    
+    /* Animated Background Particles */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+        animation: float 20s ease-in-out infinite;
+        z-index: -1;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        33% { transform: translateY(-20px) rotate(1deg); }
+        66% { transform: translateY(10px) rotate(-1deg); }
+    }
+
+    /* Premium Typography System */
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: var(--neutral-900);
+        line-height: 1.2;
+    }
+    
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; }
+    h2 { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 700; }
+    h3 { font-size: clamp(1.25rem, 3vw, 2rem); font-weight: 600; }
+
+    /* Award-Winning Analytics Header */
+    .analytics-hero-section {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        color: white;
+        border-radius: var(--radius-3xl);
+        padding: var(--space-3xl) var(--space-xl);
+        margin-bottom: var(--space-2xl);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-2xl), var(--shadow-glow);
+        transform: translateY(0);
+        transition: var(--transition-slow);
+    }
+    
+    .analytics-hero-section:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-2xl), 0 0 40px rgba(99, 102, 241, 0.4);
+    }
+
+    .analytics-hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--gradient-glass);
+        z-index: 1;
+    }
+    
+    .analytics-hero-section::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        animation: rotate 20s linear infinite;
+        z-index: 2;
+    }
+    
+    @keyframes rotate {
+        to { transform: rotate(360deg); }
+    }
+
+    .analytics-hero-section > * {
+        position: relative;
+        z-index: 3;
+    }
+
+    .analytics-hero-section h1 {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        font-weight: 900;
+        color: white;
+        margin-bottom: var(--space-lg);
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 50%, #c7d2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .analytics-hero-section .lead {
+        font-size: clamp(1rem, 2.5vw, 1.25rem);
+        color: rgba(255, 255, 255, 0.95);
+        margin-bottom: var(--space-2xl);
+        line-height: 1.8;
+        font-weight: 400;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Professional Analytics Badges */
+    .analytics-badge {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        color: white;
+        padding: var(--space-sm) var(--space-lg);
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: var(--transition-bounce);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        margin: 0 var(--space-sm);
+    }
+    
+    .analytics-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s;
+    }
+    
+    .analytics-badge:hover::before {
+        left: 100%;
+    }
+
+    .analytics-badge:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: var(--shadow-lg), var(--shadow-colored);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    .analytics-badge i {
+        margin-right: var(--space-sm);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    /* Enhanced Stat Cards */
+    .professional-stat-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-2xl);
+        padding: var(--space-2xl);
+        margin-bottom: var(--space-lg);
+        box-shadow: var(--shadow-xl);
+        transition: var(--transition-elastic);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .professional-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+        transition: left 0.6s;
+    }
+
+    .professional-stat-card:hover::before {
+        left: 100%;
+    }
+
+    .professional-stat-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: var(--shadow-2xl), var(--shadow-colored);
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .stat-icon-modern {
+        width: 80px;
+        height: 80px;
+        border-radius: var(--radius-2xl);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin-bottom: var(--space-lg);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition-bounce);
+    }
+
+    .stat-icon-modern::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.2));
+        animation: rotate 3s linear infinite;
+    }
+
+    .stat-icon-modern.total { background: var(--gradient-primary); }
+    .stat-icon-modern.applied { background: var(--gradient-success); }
+    .stat-icon-modern.interview { background: var(--gradient-info); }
+    .stat-icon-modern.recent { background: var(--gradient-warning); }
+
+    .stat-number-modern {
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: var(--space-sm);
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+
+    .stat-label-modern {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--neutral-600);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Enhanced Chart Cards */
+    .professional-chart-container {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        transition: var(--transition-smooth);
+        margin-bottom: var(--space-2xl);
+        position: relative;
+    }
+
+    .professional-chart-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+        z-index: 1;
+    }
+
+    .professional-chart-container:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .professional-chart-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: var(--space-xl);
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .professional-chart-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        z-index: 1;
+    }
+
+    .professional-chart-header > * {
+        position: relative;
+        z-index: 2;
+    }
+
+    .professional-chart-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .professional-chart-body {
+        padding: var(--space-2xl);
+        background: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Enhanced List Items */
+    .professional-list-item-modern {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: var(--radius-xl);
+        margin-bottom: var(--space-md);
+        padding: var(--space-lg) var(--space-xl);
+        transition: var(--transition-bounce);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .professional-list-item-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+        transition: left 0.5s;
+    }
+
+    .professional-list-item-modern:hover::before {
+        left: 100%;
+    }
+
+    .professional-list-item-modern:hover {
+        background: rgba(102, 126, 234, 0.1);
+        border-color: var(--primary-electric);
+        transform: translateX(5px) scale(1.02);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .professional-badge-modern {
+        background: var(--gradient-primary);
+        color: white;
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 0.875rem;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition-bounce);
+    }
+
+    .professional-badge-modern:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-lg);
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-bounce);
+    }
+
+    .status-badge.applied { background: var(--gradient-success); color: white; }
+    .status-badge.new { background: var(--gradient-primary); color: white; }
+    .status-badge.interested { background: var(--gradient-warning); color: white; }
+    .status-badge.interview { background: var(--gradient-info); color: white; }
+    .status-badge.rejected { background: var(--gradient-danger); color: white; }
+
+    .status-badge:hover {
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Modern Table Styling */
+    .professional-table {
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        background: white;
+    }
+
+    .professional-table .table {
+        margin: 0;
+        border: none;
+    }
+
+    .professional-table .table thead th {
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        padding: var(--space-lg);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.875rem;
+    }
+
+    .professional-table .table tbody td {
+        padding: var(--space-lg);
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        vertical-align: middle;
+    }
+
+    .professional-table .table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    /* Empty State Styling */
+    .empty-state {
+        text-align: center;
+        padding: var(--space-3xl);
+        color: var(--neutral-500);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: var(--space-lg);
+        opacity: 0.3;
+        color: var(--primary-electric);
+    }
+
+    .empty-state h4 {
+        color: var(--neutral-600);
+        margin-bottom: var(--space-md);
+    }
+
+    .empty-state p {
+        color: var(--neutral-500);
+        font-size: 1.1rem;
+    }
+
+    /* Animation Classes */
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .slide-in-left {
+        animation: slideInLeft 0.6s ease-out forwards;
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    @keyframes slideInLeft {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Staggered Animation Delays */
+    .fade-in-up:nth-child(1) { animation-delay: 0.1s; }
+    .fade-in-up:nth-child(2) { animation-delay: 0.2s; }
+    .fade-in-up:nth-child(3) { animation-delay: 0.3s; }
+    .fade-in-up:nth-child(4) { animation-delay: 0.4s; }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .analytics-hero-section {
+            padding: var(--space-2xl) var(--space-lg);
+        }
+        
+        .analytics-hero-section h1 {
+            font-size: clamp(1.8rem, 8vw, 2.5rem);
+        }
+        
+        .professional-chart-body {
+            padding: var(--space-lg);
+        }
+        
+        .stat-number-modern {
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+        }
+
+        .analytics-badge {
+            margin: var(--space-xs);
+            font-size: 0.75rem;
+            padding: var(--space-xs) var(--space-md);
+        }
+    }
+
+    /* Chart.js Canvas Styling */
+    canvas {
+        border-radius: var(--radius-lg);
+    }
+
+    /* Smooth Page Load Animation */
+    .page-content {
+        animation: pageLoad 0.8s ease-out;
+    }
+
+    @keyframes pageLoad {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <!-- Analytics Hero Section -->
+    <div class="analytics-hero-section text-center">
+        <h1>
+            <i class="fas fa-chart-line me-3"></i>
+            Analytics Dashboard
+        </h1>
+        <p class="lead">
+            Advanced insights and comprehensive analytics for your career discovery journey
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap mt-4">
+            <span class="analytics-badge">
+                <i class="fas fa-brain"></i>
+                AI-Powered Analysis
+            </span>
+            <span class="analytics-badge">
+                <i class="fas fa-chart-bar"></i>
+                Real-time Metrics
+            </span>
+            <span class="analytics-badge">
+                <i class="fas fa-target"></i>
+                Performance Tracking
+            </span>
+            <span class="analytics-badge">
+                <i class="fas fa-trophy"></i>
+                Success Insights
+            </span>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Enhanced Overview Stats Cards -->
+        <div class="row mb-5">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="professional-stat-card fade-in-up">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon-modern total">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="stat-number-modern">{{ stats.total_jobs }}</div>
+                            <div class="stat-label-modern">Total Opportunities</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="professional-stat-card fade-in-up">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon-modern applied">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="stat-number-modern">{{ stats.by_status.get('applied', 0) }}</div>
+                            <div class="stat-label-modern">Applications Sent</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="professional-stat-card fade-in-up">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon-modern interview">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="stat-number-modern">{{ stats.by_status.get('interview', 0) }}</div>
+                            <div class="stat-label-modern">Interviews Scheduled</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="professional-stat-card fade-in-up">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon-modern recent">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="stat-number-modern">{{ stats.recent_jobs }}</div>
+                            <div class="stat-label-modern">Recent Discoveries</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Charts Row -->
+        <div class="row mb-5">
+            <!-- Status Distribution Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="professional-chart-container slide-in-left">
+                    <div class="professional-chart-header">
+                        <h6><i class="fas fa-pie-chart me-2"></i>Application Status Distribution</h6>
+                    </div>
+                    <div class="professional-chart-body">
+                        <canvas id="statusChart" width="100" height="50"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Companies -->
+            <div class="col-lg-6 mb-4">
+                <div class="professional-chart-container slide-in-left">
+                    <div class="professional-chart-header">
+                        <h6><i class="fas fa-building me-2"></i>Top Target Companies</h6>
+                    </div>
+                    <div class="professional-chart-body">
+                        {% if stats.top_companies %}
+                            {% for company, count in (stats.top_companies.items() | list)[:8] %}
+                            <div class="professional-list-item-modern fade-in-up" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <i class="fas fa-building me-3 text-primary"></i>
+                                    <span class="fw-semibold">{{ company }}</span>
+                                </div>
+                                <div class="professional-badge-modern">{{ count }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-building"></i>
+                                <h4>No Company Data Yet</h4>
+                                <p>Start exploring opportunities to see your target companies</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Analysis Row -->
+        <div class="row mb-5">
+            <!-- Status Breakdown -->
+            <div class="col-lg-6 mb-4">
+                <div class="professional-chart-container slide-in-left">
+                    <div class="professional-chart-header">
+                        <h6><i class="fas fa-list-alt me-2"></i>Detailed Status Analysis</h6>
+                    </div>
+                    <div class="professional-chart-body">
+                        {% if stats.by_status %}
+                        <div class="professional-table">
+                            <table class="table table-borderless mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th class="text-center">Count</th>
+                                        <th class="text-center">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status, count in stats.by_status.items() %}
+                                    <tr class="fade-in-up" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                                        <td>
+                                            <span class="status-badge {{ status }}">
+                                                {{ status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center fw-bold">{{ count }}</td>
+                                        <td class="text-center">
+                                            <span class="fw-semibold text-primary">
+                                                {{ "%.1f"|format((count / stats.total_jobs * 100) if stats.total_jobs > 0 else 0) }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-chart-bar"></i>
+                                <h4>No Status Data Available</h4>
+                                <p>Start tracking applications to see detailed analytics</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Timeline -->
+            <div class="col-lg-6 mb-4">
+                <div class="professional-chart-container slide-in-left">
+                    <div class="professional-chart-header">
+                        <h6><i class="fas fa-clock me-2"></i>Recent Activity Timeline</h6>
+                    </div>
+                    <div class="professional-chart-body">
+                        {% if stats.recent_activity %}
+                            {% for activity in stats.recent_activity[:6] %}
+                            <div class="professional-list-item-modern fade-in-up" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <i class="fas fa-clock me-3 text-info"></i>
+                                    <div>
+                                        <span class="fw-semibold d-block">{{ activity.action }}</span>
+                                        <small class="text-muted">{{ activity.company }}</small>
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ activity.time }}</small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-clock"></i>
+                                <h4>No Recent Activity</h4>
+                                <p>Your recent actions will appear here</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Row -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="professional-chart-container">
+                    <div class="professional-chart-header">
+                        <h6><i class="fas fa-tachometer-alt me-2"></i>Performance Metrics & Success Rate</h6>
+                    </div>
+                    <div class="professional-chart-body">
+                        <div class="row">
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="text-center">
+                                    <div class="stat-number-modern text-success">
+                                        {{ "%.1f"|format((stats.by_status.get('interview', 0) / stats.by_status.get('applied', 1) * 100) if stats.by_status.get('applied', 0) > 0 else 0) }}%
+                                    </div>
+                                    <div class="stat-label-modern">Interview Rate</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="text-center">
+                                    <div class="stat-number-modern text-info">
+                                        {{ stats.by_status.get('applied', 0) + stats.by_status.get('interview', 0) }}
+                                    </div>
+                                    <div class="stat-label-modern">Active Pipeline</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="text-center">
+                                    <div class="stat-number-modern text-warning">
+                                        {{ stats.weekly_activity | length if stats.weekly_activity else 0 }}
+                                    </div>
+                                    <div class="stat-label-modern">Weekly Applications</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="text-center">
+                                    <div class="stat-number-modern text-primary">
+                                        {{ (stats.top_companies | length) if stats.top_companies else 0 }}
+                                    </div>
+                                    <div class="stat-label-modern">Target Companies</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div class="text-center mt-4 mb-4">
+        <a href="{{ url_for('index') }}" class="btn btn-lg" style="background: var(--gradient-primary); color: white; border-radius: var(--radius-full); padding: var(--space-lg) var(--space-2xl); font-weight: 600; box-shadow: var(--shadow-lg); transition: var(--transition-smooth);">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Professional Chart Configuration
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: {
+                usePointStyle: true,
+                padding: 20,
+                font: {
+                    family: 'Inter, sans-serif',
+                    size: 12,
+                    weight: '600'
+                }
+            }
+        }
+    }
+};
+
+// Status Distribution Chart
+const statusData = {
+    labels: [
+        {% for status in stats.by_status.keys() %}
+        '{{ status.replace("_", " ").title() }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for count in stats.by_status.values() %}
+            {{ count }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#667eea',
+            '#764ba2', 
+            '#f093fb',
+            '#f5576c',
+            '#4facfe',
+            '#00f2fe'
+        ],
+        borderWidth: 0,
+        hoverOffset: 10
+    }]
+};
+
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: statusData,
+    options: {
+        ...chartDefaults,
+        cutout: '70%',
+        plugins: {
+            ...chartDefaults.plugins,
+            legend: {
+                ...chartDefaults.plugins.legend,
+                position: 'right'
+            }
+        }
+    }
+});
+
+// Add animation classes on scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running';
+        }
+    });
+}, observerOptions);
+
+document.querySelectorAll('.fade-in-up, .slide-in-left').forEach(el => {
+    observer.observe(el);
+});
+</script>
+{% endblock %}
