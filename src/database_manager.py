@@ -706,7 +706,6 @@ class DatabaseManager:
             if session_id:
                 query += ' WHERE session_id = ?'
                 params.append(session_id)
-            
             cursor.execute(query, params)
             result = cursor.fetchone()
             return result[0] if result and result[0] is not None else 0.0
@@ -725,20 +724,17 @@ class DatabaseManager:
             cursor = conn.cursor()
             query = '''
                 SELECT search_query, num_results_shown, num_relevant_results, 
-                       ai_accuracy_percent, timestamp
+                       ai_accuracy_percent, search_timestamp
                 FROM search_log
             '''
             params = []
             if session_id:
                 query += ' WHERE session_id = ?'
                 params.append(session_id)
-            
-            query += ' ORDER BY timestamp DESC LIMIT ?'
+            query += ' ORDER BY search_timestamp DESC LIMIT ?'
             params.append(limit)
-            
             cursor.execute(query, params)
             results = cursor.fetchall()
-            
             return [{
                 'query': row[0],
                 'results_shown': row[1],
@@ -760,11 +756,11 @@ class DatabaseManager:
         try:
             cursor = conn.cursor()
             query = '''
-                SELECT DATE(timestamp) as date, 
+                SELECT DATE(search_timestamp) as date, 
                        AVG(ai_accuracy_percent) as avg_accuracy,
                        COUNT(*) as search_count
                 FROM search_log
-                WHERE timestamp >= datetime('now', '-{} days')
+                WHERE search_timestamp >= datetime('now', '-{} days')
             '''.format(days)
             
             params = []
@@ -772,7 +768,7 @@ class DatabaseManager:
                 query += ' AND session_id = ?'
                 params.append(session_id)
             
-            query += ' GROUP BY DATE(timestamp) ORDER BY date'
+            query += ' GROUP BY DATE(search_timestamp) ORDER BY date'
             
             cursor.execute(query, params)
             results = cursor.fetchall()
