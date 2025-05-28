@@ -14,6 +14,7 @@ BRIGHT_DATA_API_KEY = os.getenv('BRIGHT_DATA_API_KEY')
 BRIGHT_DATA_SERP_ZONE = os.getenv('BRIGHT_DATA_SERP_ZONE')
 BRIGHT_DATA_WEB_ZONE = os.getenv('BRIGHT_DATA_WEB_ZONE')  # For Access Phase web scraping
 BRIGHT_DATA_WEB_UNLOCKER_ZONE = os.getenv('BRIGHT_DATA_WEB_UNLOCKER_ZONE') # For Access Phase Web Unlocker
+BRIGHT_DATA_SNAPSHOT_ID = os.getenv('BRIGHT_DATA_SNAPSHOT_ID', 's_mb2nxqys1f43vbp3bf')  # LinkedIn Dataset API snapshot ID
 REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', 30))
 RATE_LIMIT_DELAY = float(os.getenv('RATE_LIMIT_DELAY', 2.0))  # Access Phase rate limiting
 
