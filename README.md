@@ -20,6 +20,7 @@ The Realtime Opportunity Engine is an intelligent job discovery system that help
 - 💾 **Session Isolation** - Multi-user support with session-based data isolation
 - 🌐 **Modern Web Interface** - Beautiful Flask web app with AJAX updates and responsive design
 - 📈 **Real-time Analytics** - Live statistics showing progress across all four MCP actions
+- 🔒 **Real Data Only** - Uses only real data from Bright Data API with no demo fallbacks
 
 ---
 
@@ -83,9 +84,17 @@ pip install -r requirements.txt
 Create a `.env` file with your Bright Data credentials:
 
 ```
-BRIGHTDATA_API_KEY=your_api_key
-BRIGHTDATA_ACCOUNT_ID=your_account_id
-LINKEDIN_DATASET_ID=your_dataset_id
+# Bright Data SERP API Configuration
+BRIGHT_DATA_API_KEY=your_api_key
+BRIGHT_DATA_SERP_ZONE=your_serp_zone
+BRIGHT_DATA_WEB_UNLOCKER_ZONE=your_unlocker_zone
+BRIGHT_DATA_SNAPSHOT_ID=your_snapshot_id
+
+# Optional: Customize behavior
+REQUEST_TIMEOUT=30
+MAX_RESULTS_PER_SEARCH=20
+REQUESTS_PER_MINUTE=10
+LOG_LEVEL=INFO
 ```
 
 ### 3. Start the Web Application
