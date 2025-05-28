@@ -106,20 +106,22 @@ class DatabaseManager:
             cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_status ON {self.jobs_table} (status)')
             cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_extracted_at ON {self.jobs_table} (extracted_at)')
             
-            # Search log table
-            cursor.execute(f'''
+            # Search log table - Make sure this exists for statistics
+            cursor.execute('''
                 CREATE TABLE IF NOT EXISTS search_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT NOT NULL, -- Or user_id if you have full user auth
+                    session_id TEXT NOT NULL,
                     search_query TEXT NOT NULL,
                     num_results_shown INTEGER NOT NULL,
-                    num_relevant_results INTEGER NOT NULL, -- Based on AI similarity threshold
-                    ai_accuracy_percent REAL NOT NULL, -- (num_relevant / num_shown) * 100
+                    num_relevant_results INTEGER NOT NULL,
+                    ai_accuracy_percent REAL NOT NULL,
                     search_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_search_log_session ON search_log (session_id)')
-            cursor.execute(f'CREATE INDEX IF NOT EXISTS idx_search_log_query ON search_log (search_query)')
+            
+            # Make sure the indexes exist
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_search_log_session ON search_log (session_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_search_log_query ON search_log (search_query)')
             
             conn.commit()
             logger.info(f"Database initialized: {self.db_path}")
