@@ -1,9 +1,7 @@
+#!/usr/bin/env python3
 """
-Bright Data MCP Server Integration Handler - Real API Integration
-This module implements the Model Context Protocol (MCP) integration with Bright Data
-using your existing SERP and Web Unlocker APIs to demonstrate all four key actions.
-
-This enhancement showcases how MCP enhances traditional API performance.
+MCP-enhanced job discovery using Bright Data's Model Context Protocol
+Implementation of all four required actions: DISCOVER, ACCESS, EXTRACT, INTERACT
 """
 
 import os
@@ -19,6 +17,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
+from src.nlp_utils import clear_model
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,10 +33,10 @@ class MCPAction(Enum):
 @dataclass
 class MCPResult:
     """Standardized MCP operation result"""
-    action: MCPAction
     success: bool
     data: Any
     metadata: Dict
+    action: MCPAction = None
     timestamp: str = ""
     execution_time: float = 0.0
     improvement_notes: List[str] = None
@@ -58,7 +57,7 @@ class BrightDataMCPHandler:
         """Initialize the MCP handler"""
         self.api_key = os.getenv('BRIGHT_DATA_API_KEY')
         self.serp_zone = os.getenv('BRIGHT_DATA_SERP_ZONE')
-        self.web_zone = os.getenv('BRIGHT_DATA_WEB_ZONE')
+        self.web_zone = os.getenv('BRIGHT_DATA_WEB_UNLOCKER_ZONE')
         self.timeout = int(os.getenv('REQUEST_TIMEOUT', 30))
         
         if not self.api_key:
@@ -128,12 +127,12 @@ class BrightDataMCPHandler:
         
         try:
             # Use the Bright Data Dataset API for real job data
-                from .brightdata_dataset_api import BrightDataDatasetAPI
-                dataset_api = BrightDataDatasetAPI()
-                
-                # Start the discovery process
-                jobs = dataset_api.get_jobs(limit=max_results, keyword=search_query)
-                
+            from .brightdata_dataset_api import BrightDataDatasetAPI
+            dataset_api = BrightDataDatasetAPI()
+            
+            # Start the discovery process
+            jobs = dataset_api.get_jobs(limit=max_results, keyword=search_query)
+            
             if not jobs or len(jobs) == 0:
                 error_msg = "No job listings found for the given search criteria"
                 logger.error(f"❌ {error_msg}")
@@ -145,46 +144,46 @@ class BrightDataMCPHandler:
                     execution_time=time.time() - start_time
                 )
             
-                    # Convert jobs to our format
-                    all_job_urls = []
-                    
-                    # Process each job
-                    for job in jobs:
-                        # Extract job URL
-                        job_url = job.get('url') or job.get('link') or job.get('apply_link')
-                        
-                        if job_url:
-                            # Extract job details
-                            job_title = job.get('job_title') or job.get('title')
-                            company = job.get('company_name') or job.get('company')
-                            location_val = job.get('job_location') or job.get('location')
-                            
-                            # Calculate relevance score
-                            relevance_score = self._calculate_mcp_relevance_score({
-                                'title': job_title,
-                                'company': company,
-                                'description': job.get('job_summary', '')
-                            }, search_query)
-                            
-                            job_entry = {
-                                'url': job_url,
-                                'title': str(job_title).strip() if job_title else "Unknown Title",
-                                'company': str(company).strip() if company else "Unknown Company",
-                                'location': str(location_val).strip() if location_val else "Unknown Location",
-                                'relevance_score': relevance_score,
-                                'discovery_method': 'MCP_LinkedIn_Dataset_API',
-                                'query_used': search_query,
-                                'raw_data': job
-                            }
-                            
-                            all_job_urls.append(job_entry)
-                            logger.debug(f"📊 MCP: Added job URL {len(all_job_urls)}: {job_title} at {company}")
-                    
-                    # Sort by relevance score
-                    all_job_urls.sort(key=lambda x: x['relevance_score'], reverse=True)
-                    
-                    logger.info(f"📊 MCP: Successfully extracted {len(all_job_urls)} jobs from Bright Data Dataset API")
+            # Convert jobs to our format
+            all_job_urls = []
             
+            # Process each job
+            for job in jobs:
+                # Extract job URL
+                job_url = job.get('url') or job.get('link') or job.get('apply_link')
+                
+                if job_url:
+                    # Extract job details
+                    job_title = job.get('job_title') or job.get('title')
+                    company = job.get('company_name') or job.get('company')
+                    location_val = job.get('job_location') or job.get('location')
+                    
+                    # Calculate relevance score
+                    relevance_score = self._calculate_mcp_relevance_score({
+                        'title': job_title,
+                        'company': company,
+                        'description': job.get('job_summary', '')
+                    }, search_query)
+                    
+                    job_entry = {
+                        'url': job_url,
+                        'title': str(job_title).strip() if job_title else "Unknown Title",
+                        'company': str(company).strip() if company else "Unknown Company",
+                        'location': str(location_val).strip() if location_val else "Unknown Location",
+                        'relevance_score': relevance_score,
+                        'discovery_method': 'MCP_LinkedIn_Dataset_API',
+                        'query_used': search_query,
+                        'raw_data': job
+                    }
+                    
+                    all_job_urls.append(job_entry)
+                    logger.debug(f"📊 MCP: Added job URL {len(all_job_urls)}: {job_title} at {company}")
+            
+            # Sort by relevance score
+            all_job_urls.sort(key=lambda x: x['relevance_score'], reverse=True)
+            
+            logger.info(f"📊 MCP: Successfully extracted {len(all_job_urls)} jobs from Bright Data Dataset API")
+    
             # Performance metrics
             end_time = time.time()
             processing_time = end_time - start_time
@@ -435,6 +434,9 @@ class BrightDataMCPHandler:
             
             logger.info(f"✅ MCP EXTRACT: Extracted {len(extracted_data)} fields in {processing_time:.2f}s")
             
+            # Clear model to free memory
+            clear_model()
+            
             return MCPResult(
                 success=True,
                 action=MCPAction.EXTRACT,
@@ -447,6 +449,9 @@ class BrightDataMCPHandler:
         except Exception as e:
             error_msg = f"MCP EXTRACT failed: {str(e)}"
             logger.error(f"❌ {error_msg}")
+            
+            # Clear model on exception too
+            clear_model()
             
             return MCPResult(
                 success=False,
@@ -671,6 +676,9 @@ class BrightDataMCPHandler:
             
             logger.info(f"✅ MCP INTERACT: Generated insights in {processing_time:.2f}s")
             
+            # Clear model to free memory
+            clear_model()
+            
             return MCPResult(
                 success=True,
                 action=MCPAction.INTERACT,
@@ -683,6 +691,9 @@ class BrightDataMCPHandler:
         except Exception as e:
             error_msg = f"MCP INTERACT failed: {str(e)}"
             logger.error(f"❌ {error_msg}")
+            
+            # Clear model on exception too
+            clear_model()
             
             return MCPResult(
                 success=False,
@@ -805,7 +816,6 @@ class BrightDataMCPHandler:
         
         return summary
 
-
 # Demo function
 async def demo_mcp_integration():
     """Demo function for testing"""
@@ -815,7 +825,6 @@ async def demo_mcp_integration():
         # Test discover
         result = await mcp_handler.discover_opportunities("software engineering internship")
         print(f"Discover: {result.success}, found {len(result.data.get('job_urls', []))} jobs")
-
 
 if __name__ == "__main__":
     asyncio.run(demo_mcp_integration())

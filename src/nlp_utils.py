@@ -5,21 +5,30 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Load a pre-trained sentence transformer model
-# 'all-MiniLM-L6-v2' is a good starting point: fast and decent quality.
-# For higher accuracy (but slower), consider models like 'all-mpnet-base-v2'
+# Define model name but don't load it at import time
 MODEL_NAME = 'all-MiniLM-L6-v2'
-try:
-    model = SentenceTransformer(MODEL_NAME)
-    logger.info(f"Successfully loaded SentenceTransformer model: {MODEL_NAME}")
-except Exception as e:
-    logger.error(f"Error loading SentenceTransformer model '{MODEL_NAME}': {e}")
-    logger.error("NLP features will be unavailable. Ensure the model is downloaded or an alternative is configured.")
-    model = None
+model = None
+
+def get_model():
+    """Lazy-load the model only when needed"""
+    global model
+    if model is None:
+        try:
+            logger.info(f"Loading SentenceTransformer model: {MODEL_NAME}")
+            model = SentenceTransformer(MODEL_NAME)
+            logger.info(f"Successfully loaded SentenceTransformer model: {MODEL_NAME}")
+        except Exception as e:
+            logger.error(f"Error loading SentenceTransformer model '{MODEL_NAME}': {e}")
+            logger.error("NLP features will be unavailable. Ensure the model is downloaded or an alternative is configured.")
+            model = None
+    return model
 
 def get_embedding(text: str):
     """Generates a sentence embedding for the given text."""
-    if not model:
+    # Only load the model when this function is actually called
+    current_model = get_model()
+    
+    if not current_model:
         # Fallback if model loading failed, or return None/raise error
         logger.warning("SentenceTransformer model not loaded. Returning zero vector.")
         # The dimensionality depends on the model, MiniLM-L6-v2 has 384 dimensions.
@@ -30,13 +39,13 @@ def get_embedding(text: str):
         return np.zeros(384) 
     if not text or not isinstance(text, str):
         logger.warning("Invalid text input for embedding. Returning zero vector.")
-        return np.zeros(model.get_sentence_embedding_dimension() if model else 384)
+        return np.zeros(current_model.get_sentence_embedding_dimension())
     try:
-        embedding = model.encode(text, convert_to_tensor=False) # convert_to_tensor=False for numpy array
+        embedding = current_model.encode(text, convert_to_tensor=False) # convert_to_tensor=False for numpy array
         return embedding
     except Exception as e:
         logger.error(f"Error generating embedding for text '{text[:50]}...': {e}")
-        return np.zeros(model.get_sentence_embedding_dimension() if model else 384)
+        return np.zeros(current_model.get_sentence_embedding_dimension())
 
 def calculate_cosine_similarity(vec1, vec2):
     """Calculates cosine similarity between two vectors."""
@@ -52,6 +61,16 @@ def calculate_cosine_similarity(vec1, vec2):
     except Exception as e:
         logger.error(f"Error calculating cosine similarity: {e}")
         return 0.0
+
+# Function to explicitly free up memory by clearing the model
+def clear_model():
+    """Clear the model from memory to free up resources"""
+    global model
+    if model is not None:
+        logger.info("Clearing SentenceTransformer model from memory")
+        model = None
+        import gc
+        gc.collect()
 
 # Example Usage (can be removed or kept for testing)
 if __name__ == '__main__':
@@ -75,3 +94,6 @@ if __name__ == '__main__':
     empty_embedding = get_embedding("")
     similarity_empty = calculate_cosine_similarity(query_embedding, empty_embedding)
     print(f"Similarity (Empty Description): {similarity_empty:.4f}") 
+    
+    # Clear model after using it
+    clear_model() 

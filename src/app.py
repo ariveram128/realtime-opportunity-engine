@@ -22,7 +22,7 @@ import asyncio
 from .linkedin_scraper_handler import LinkedInScraperHandler
 from .database_manager import DatabaseManager
 from .job_filter import JobFilter
-from src.nlp_utils import get_embedding, calculate_cosine_similarity
+from src.nlp_utils import get_embedding, calculate_cosine_similarity, clear_model
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
@@ -146,6 +146,8 @@ def index():
             elif search_query_user: 
                  db.log_search_event(session_id, search_query_user, 0, 0, 0.0)
             
+            # Free up memory after search is completed
+            clear_model()
         else:
             final_filtered_jobs_for_accuracy_check = jobs_from_db 
             jobs_to_display = jobs_from_db
@@ -1371,6 +1373,9 @@ async def run_mcp_search_async(search_term, max_results, session_id):
         
         logger.info(f"✅ MCP search completed: {stored_count} enhanced jobs stored")
         
+        # Free up memory after search is completed
+        clear_model()
+
     except Exception as e:
         logger.error(f"❌ Error in MCP search: {e}")
         mcp_search_status['error'] = str(e)
