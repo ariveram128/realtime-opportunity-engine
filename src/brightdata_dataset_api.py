@@ -8,8 +8,10 @@ import json
 import logging
 import time
 import requests
+import uuid
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
+from config import BRIGHT_DATA_API_KEY, BRIGHT_DATA_SNAPSHOT_ID, REQUEST_TIMEOUT
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,10 +27,10 @@ class BrightDataDatasetAPI:
     
     def __init__(self):
         """Initialize the Bright Data Dataset API client"""
-        self.api_key = os.getenv('BRIGHT_DATA_API_KEY')
-        self.snapshot_id = os.getenv('BRIGHT_DATA_SNAPSHOT_ID', 's_mb2nxqys1f43vbp3bf')
+        self.api_key = BRIGHT_DATA_API_KEY
+        self.snapshot_id = BRIGHT_DATA_SNAPSHOT_ID
         self.base_url = os.getenv('BRIGHT_DATA_DATASET_API_URL', 'https://api.brightdata.com/datasets/v3')
-        self.timeout = int(os.getenv('REQUEST_TIMEOUT', 60))
+        self.timeout = REQUEST_TIMEOUT
         
         if not self.api_key:
             logger.warning("BRIGHT_DATA_API_KEY not found in environment variables")
@@ -52,9 +54,10 @@ class BrightDataDatasetAPI:
         
         try:
             url = f"{self.base_url}/snapshot/{self.snapshot_id}"
+            
+            # Don't include limit in the API request parameters as it's causing a validation error
             params = {
-                "format": "json",
-                "limit": 100  # Request more jobs than needed to ensure we have enough after filtering
+                "format": "json"
             }
             
             headers = {
@@ -65,64 +68,58 @@ class BrightDataDatasetAPI:
             response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
             
             if response.status_code == 200:
-                jobs = response.json()
-                logger.info(f"Successfully fetched {len(jobs)} jobs from Bright Data Dataset API")
-                
-                # Filter by keyword if provided, using more flexible matching
-                if keyword and isinstance(jobs, list):
-                    keywords = keyword.lower().split()
-                    filtered_jobs = []
-                    
-                    for job in jobs:
-                        # Check multiple fields for any keyword match
-                        job_text = (
-                            job.get('job_title', '').lower() + ' ' +
-                            job.get('job_summary', '').lower() + ' ' +
-                            job.get('company_name', '').lower() + ' ' +
-                            job.get('job_description', '').lower() + ' ' +
-                            job.get('job_location', '').lower() + ' ' +
-                            job.get('job_skills', '').lower() + ' ' +
-                            job.get('job_industry', '').lower()
-                        )
+                try:
+                    jobs = response.json()
+                    if not isinstance(jobs, list):
+                        logger.error(f"API returned non-list response: {type(jobs)}")
+                        return []
                         
-                        # Consider a match if any keyword is found or if related terms are found
-                        related_terms = self._expand_search_terms(keywords)
-                        if any(kw in job_text for kw in keywords) or any(term in job_text for term in related_terms):
-                            filtered_jobs.append(job)
+                    logger.info(f"Successfully fetched {len(jobs)} jobs from Bright Data Dataset API")
                     
-                    logger.info(f"Filtered to {len(filtered_jobs)} jobs matching keywords '{keyword}'")
-                    jobs = filtered_jobs
-                    
-                    # If we have too few results, try a more lenient approach
-                    if len(jobs) < 5:
-                        logger.info("Too few results, trying more lenient matching")
-                        jobs = response.json()  # Reset to all jobs
+                    # Filter by keyword if provided, using more flexible matching
+                    if keyword and len(jobs) > 0:
+                        keywords = keyword.lower().split()
                         filtered_jobs = []
                         
-                        # Use partial matching instead
                         for job in jobs:
+                            # Check multiple fields for any keyword match
                             job_text = (
-                                job.get('job_title', '').lower() + ' ' +
-                                job.get('job_summary', '').lower()
+                                str(job.get('job_title', '')).lower() + ' ' +
+                                str(job.get('job_summary', '')).lower() + ' ' +
+                                str(job.get('company_name', '')).lower() + ' ' +
+                                str(job.get('job_description', '')).lower() + ' ' +
+                                str(job.get('job_location', '')).lower() + ' ' +
+                                str(job.get('job_skills', '')).lower() + ' ' +
+                                str(job.get('job_industry', '')).lower()
                             )
                             
-                            # Match if any part of any keyword is found
-                            if any(kw in job_text for kw in keywords) or any(any(part in job_text for part in kw.split()) for kw in keywords):
+                            # Consider a match if any keyword is found or if related terms are found
+                            related_terms = self._expand_search_terms(keywords)
+                            if any(kw in job_text for kw in keywords) or any(term in job_text for term in related_terms):
                                 filtered_jobs.append(job)
                         
-                        logger.info(f"Lenient filtering found {len(filtered_jobs)} jobs")
+                        logger.info(f"Filtered to {len(filtered_jobs)} jobs matching keywords '{keyword}'")
                         jobs = filtered_jobs
-                
-                # Apply limit after filtering
-                if limit and isinstance(jobs, list) and len(jobs) > limit:
-                    jobs = jobs[:limit]
-                    logger.info(f"Limited to {len(jobs)} jobs")
-                
-                # If no jobs found, return empty list to trigger fallback to demo data
-                if not jobs:
-                    logger.warning(f"No jobs found matching '{keyword}', will use demo data")
-                
-                return jobs
+                    
+                    # Apply limit after filtering
+                    if limit and len(jobs) > limit:
+                        jobs = jobs[:limit]
+                        logger.info(f"Limited to {len(jobs)} jobs")
+                    
+                    # Ensure each job has a URL
+                    for job in jobs:
+                        if not job.get('url'):
+                            # Generate a URL if missing
+                            job_title = job.get('job_title', 'job').replace(' ', '-').lower()
+                            company = job.get('company_name', 'company').replace(' ', '-').lower()
+                            job_id = job.get('job_posting_id', str(uuid.uuid4())[:8])
+                            job['url'] = f"https://www.linkedin.com/jobs/view/{job_title}-at-{company}-{job_id}"
+                    
+                    return jobs
+                except ValueError as e:
+                    logger.error(f"Failed to parse API response as JSON: {e}")
+                    logger.error(f"Response content: {response.text[:200]}...")
+                    return []
             else:
                 logger.error(f"Failed to fetch jobs: {response.status_code} - {response.text}")
                 return []

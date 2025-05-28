@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Potential enhancements to search analytics visualizations
 - Additional filtering options for search history
 
+## [1.3.0] - 2025-05-28
+
+### Added
+- Added BRIGHT_DATA_SNAPSHOT_ID configuration variable to config.py
+
+### Changed
+- Removed all demo data fallbacks to ensure system uses only real data from Bright Data API
+- Enhanced MCP Bright Data handler to exclusively use real API data
+- Improved error handling in Bright Data Dataset API client
+- Updated job data extraction to better handle real data from LinkedIn
+- Optimized API request parameters for more accurate search results
+
+### Fixed
+- Fixed issue where system would fall back to demo data when API calls failed
+- Corrected API request parameters for more reliable results
+- Ensured proper error handling for failed API requests
+
 ## [1.2.0] - 2025-05-26
 
 ### Added
