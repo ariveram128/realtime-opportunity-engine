@@ -128,12 +128,12 @@ class BrightDataMCPHandler:
         
         try:
             # Use the Bright Data Dataset API for real job data
-            from .brightdata_dataset_api import BrightDataDatasetAPI
-            dataset_api = BrightDataDatasetAPI()
-            
-            # Start the discovery process
-            jobs = dataset_api.get_jobs(limit=max_results, keyword=search_query)
-            
+                from .brightdata_dataset_api import BrightDataDatasetAPI
+                dataset_api = BrightDataDatasetAPI()
+                
+                # Start the discovery process
+                jobs = dataset_api.get_jobs(limit=max_results, keyword=search_query)
+                
             if not jobs or len(jobs) == 0:
                 error_msg = "No job listings found for the given search criteria"
                 logger.error(f"❌ {error_msg}")
@@ -145,45 +145,45 @@ class BrightDataMCPHandler:
                     execution_time=time.time() - start_time
                 )
             
-            # Convert jobs to our format
-            all_job_urls = []
-            
-            # Process each job
-            for job in jobs:
-                # Extract job URL
-                job_url = job.get('url') or job.get('link') or job.get('apply_link')
-                
-                if job_url:
-                    # Extract job details
-                    job_title = job.get('job_title') or job.get('title')
-                    company = job.get('company_name') or job.get('company')
-                    location_val = job.get('job_location') or job.get('location')
+                    # Convert jobs to our format
+                    all_job_urls = []
                     
-                    # Calculate relevance score
-                    relevance_score = self._calculate_mcp_relevance_score({
-                        'title': job_title,
-                        'company': company,
-                        'description': job.get('job_summary', '')
-                    }, search_query)
+                    # Process each job
+                    for job in jobs:
+                        # Extract job URL
+                        job_url = job.get('url') or job.get('link') or job.get('apply_link')
+                        
+                        if job_url:
+                            # Extract job details
+                            job_title = job.get('job_title') or job.get('title')
+                            company = job.get('company_name') or job.get('company')
+                            location_val = job.get('job_location') or job.get('location')
+                            
+                            # Calculate relevance score
+                            relevance_score = self._calculate_mcp_relevance_score({
+                                'title': job_title,
+                                'company': company,
+                                'description': job.get('job_summary', '')
+                            }, search_query)
+                            
+                            job_entry = {
+                                'url': job_url,
+                                'title': str(job_title).strip() if job_title else "Unknown Title",
+                                'company': str(company).strip() if company else "Unknown Company",
+                                'location': str(location_val).strip() if location_val else "Unknown Location",
+                                'relevance_score': relevance_score,
+                                'discovery_method': 'MCP_LinkedIn_Dataset_API',
+                                'query_used': search_query,
+                                'raw_data': job
+                            }
+                            
+                            all_job_urls.append(job_entry)
+                            logger.debug(f"📊 MCP: Added job URL {len(all_job_urls)}: {job_title} at {company}")
                     
-                    job_entry = {
-                        'url': job_url,
-                        'title': str(job_title).strip() if job_title else "Unknown Title",
-                        'company': str(company).strip() if company else "Unknown Company",
-                        'location': str(location_val).strip() if location_val else "Unknown Location",
-                        'relevance_score': relevance_score,
-                        'discovery_method': 'MCP_LinkedIn_Dataset_API',
-                        'query_used': search_query,
-                        'raw_data': job
-                    }
+                    # Sort by relevance score
+                    all_job_urls.sort(key=lambda x: x['relevance_score'], reverse=True)
                     
-                    all_job_urls.append(job_entry)
-                    logger.debug(f"📊 MCP: Added job URL {len(all_job_urls)}: {job_title} at {company}")
-            
-            # Sort by relevance score
-            all_job_urls.sort(key=lambda x: x['relevance_score'], reverse=True)
-            
-            logger.info(f"📊 MCP: Successfully extracted {len(all_job_urls)} jobs from Bright Data Dataset API")
+                    logger.info(f"📊 MCP: Successfully extracted {len(all_job_urls)} jobs from Bright Data Dataset API")
             
             # Performance metrics
             end_time = time.time()

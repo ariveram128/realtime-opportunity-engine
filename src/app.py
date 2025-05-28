@@ -249,15 +249,58 @@ def statistics():
         session_id = get_or_create_session_id()
         stats_data = db.get_job_stats(session_id=session_id) # Renamed stats to stats_data
         
-        # Enhanced search analytics
-        search_analytics = {
-            'average_accuracy': db.get_average_search_accuracy(session_id=session_id),
-            'search_history': db.get_search_history(session_id=session_id, limit=10),
-            'accuracy_trends': db.get_search_accuracy_trends(session_id=session_id, days=30),
-            'accuracy_distribution': db.get_search_accuracy_distribution(session_id=session_id),
-            'query_analytics': db.get_search_query_analytics(session_id=session_id, limit=10),
-            'performance_summary': db.get_search_performance_summary(session_id=session_id)
-        }
+        # Enhanced search analytics with proper error handling
+        search_analytics = {}
+        
+        # Try to get average accuracy with fallback
+        try:
+            search_analytics['average_accuracy'] = db.get_average_search_accuracy(session_id=session_id)
+        except Exception as e:
+            logger.warning(f"Error getting average search accuracy: {e}")
+            search_analytics['average_accuracy'] = 0.0
+        
+        # Try to get search history with fallback
+        try:
+            search_analytics['search_history'] = db.get_search_history(session_id=session_id, limit=10)
+        except Exception as e:
+            logger.warning(f"Error getting search history: {e}")
+            search_analytics['search_history'] = []
+        
+        # Try to get accuracy trends with fallback
+        try:
+            search_analytics['accuracy_trends'] = db.get_search_accuracy_trends(session_id=session_id, days=30)
+        except Exception as e:
+            logger.warning(f"Error getting accuracy trends: {e}")
+            search_analytics['accuracy_trends'] = []
+        
+        # Try to get accuracy distribution with fallback
+        try:
+            search_analytics['accuracy_distribution'] = db.get_search_accuracy_distribution(session_id=session_id)
+        except Exception as e:
+            logger.warning(f"Error getting accuracy distribution: {e}")
+            search_analytics['accuracy_distribution'] = {}
+        
+        # Try to get query analytics with fallback
+        try:
+            search_analytics['query_analytics'] = db.get_search_query_analytics(session_id=session_id, limit=10)
+        except Exception as e:
+            logger.warning(f"Error getting query analytics: {e}")
+            search_analytics['query_analytics'] = []
+        
+        # Try to get performance summary with fallback
+        try:
+            search_analytics['performance_summary'] = db.get_search_performance_summary(session_id=session_id)
+        except Exception as e:
+            logger.warning(f"Error getting performance summary: {e}")
+            search_analytics['performance_summary'] = {
+                'total_searches': 0,
+                'avg_accuracy': 0,
+                'max_accuracy': 0,
+                'min_accuracy': 0,
+                'avg_results_shown': 0,
+                'avg_relevant_results': 0,
+                'unique_queries': 0
+            }
         
         jobs = db.get_jobs(limit=1000, session_id=session_id)
         
@@ -1279,26 +1322,62 @@ async def run_mcp_search_async(search_term, max_results, session_id):
             if success:
                 stored_count += 1
                 logger.info(f"✅ Stored MCP job {stored_count}: {job['title']} at {job['company']}")
+            else:
+                logger.info(f"⚠️ Duplicate job skipped: {job['title']} at {job['company']}")
         
-        # Complete the search
+        # Calculate search accuracy and log the event
+        try:
+            # Get query embedding for the search term
+            from src.nlp_utils import get_embedding, calculate_cosine_similarity
+            query_embedding = get_embedding(search_term)
+            SIMILARITY_THRESHOLD = 0.6  # Threshold for determining relevance
+            
+            # Count how many jobs are actually relevant
+            num_relevant = 0
+            
+            for job in enhanced_jobs:
+                job_text = f"{job['title']} {job.get('description', '')}"
+                if not job_text.strip():
+                    continue
+                
+                job_embedding = get_embedding(job_text)
+                similarity = calculate_cosine_similarity(query_embedding, job_embedding)
+                
+                if similarity >= SIMILARITY_THRESHOLD:
+                    num_relevant += 1
+            
+            # Calculate accuracy
+            num_shown = len(enhanced_jobs)
+            accuracy = (num_relevant / num_shown * 100) if num_shown > 0 else 0
+            
+            # Log search event
+            logger.info(f"🤖 Calculating AI search accuracy for query: '{search_term}'")
+            db.log_search_event(session_id, search_term, num_shown, num_relevant, accuracy)
+            logger.info(f"✅ Logged search accuracy: {accuracy:.2f}% ({num_relevant}/{num_shown} relevant)")
+            
+        except Exception as e:
+            logger.error(f"❌ Error logging search event: {e}")
+        
+        # Update final results
+        mcp_search_status['results'].update({
+            'found': len(enhanced_jobs),
+            'added': stored_count
+        })
+        
         mcp_search_status['progress'] = 100
-        mcp_search_status['current_phase'] = 'Search completed successfully'
+        mcp_search_status['current_phase'] = f'MCP search completed. {stored_count} jobs stored.'
         mcp_search_status['is_running'] = False
         mcp_search_status['completed_at'] = datetime.now().isoformat()
-        mcp_search_status['results']['stored_jobs'] = stored_count
-        
-        # Get performance metrics
-        mcp_search_status['performance_metrics'] = mcp_handler.get_performance_summary()
         
         logger.info(f"✅ MCP search completed: {stored_count} enhanced jobs stored")
         
     except Exception as e:
-        logger.error(f"❌ MCP search failed: {str(e)}")
-        logger.error(traceback.format_exc())
+        logger.error(f"❌ Error in MCP search: {e}")
         mcp_search_status['error'] = str(e)
         mcp_search_status['is_running'] = False
         mcp_search_status['completed_at'] = datetime.now().isoformat()
         mcp_search_status['progress'] = 100
+        mcp_search_status['current_phase'] = f'Error: {str(e)}'
 
 # ==================== END MCP ROUTES ====================
 
